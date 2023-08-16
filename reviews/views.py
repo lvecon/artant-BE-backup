@@ -25,7 +25,7 @@ class ReviewDetails(APIView):
 
     def get(self, request, pk):
         review = self.get_object(pk)
-
+        
         serializer = ReviewDetailSerializer(
             review,
             context={"request": request},
