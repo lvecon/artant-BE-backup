@@ -137,11 +137,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
-    category = serializers.SerializerMethodField()
+    # category = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
-    colors = ColorSerializer(many=True, read_only=True)
+    # colors = ColorSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -156,20 +156,20 @@ class ProductListSerializer(serializers.ModelSerializer):
             "rating_count",
             "free_shipping",
             "is_discount",
-            "is_frame_included",
-            "is_artant_choice",
-            "is_artant_star",
-            "colors",
-            "product_item_type",
-            "is_giftcard_available",
-            "is_gift_wrapping_available",
-            "is_customizable",
+            # "is_frame_included",
+            # "is_artant_choice",
+            # "is_artant_star",
+            # "colors",
+            # "product_item_type",
+            # "is_giftcard_available",
+            # "is_gift_wrapping_available",
+            # "is_customizable",
             "is_best_seller",
             "is_star_seller",
             "is_liked",
             "thumbnail",
-            "created_at",
-            "category",
+            # "created_at",
+            # "category",
         )
 
     def get_rating(self, product):
