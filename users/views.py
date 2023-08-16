@@ -8,6 +8,7 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import Shop, User
+from products.models import Product
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
@@ -112,8 +113,7 @@ class LogOut(APIView):
 
 class Shops(APIView):
     def get(self, request):
-        sorted_shops = Shop.objects.order_by("-is_star_seller", "-created_at")[:4]
-        print(sorted_shops)
+        sorted_shops = Shop.objects.order_by("-is_star_seller", "-created_at")
 
         serializer = serializers.TinyShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
@@ -196,3 +196,55 @@ class ShopProducts(APIView):
             context={"reqeust": request},
         )
         return Response(serializer.data)
+
+
+class ReviewImages(APIView):
+    def get_object(self, pk):
+        try:
+            return Shop.objects.get(pk=pk)
+        except Shop.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk, product_pk):
+        try:
+            page = request.query_params.get("page", 1)  # ( ,default value)
+            page = int(page)  # Type change
+        except ValueError:
+            page = 1
+
+        page_size = settings.REVIEW_IMAGE_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = start + page_size
+        shop = self.get_object(pk)
+        product_name = Product.objects.get(pk=product_pk).name
+
+        products = shop.product.all()
+        all_reviews = []
+        for product in products:
+            reviews = product.reviews.filter(images__isnull=False)
+            all_reviews.extend(reviews)
+
+        all_reviews_sorted = sorted(
+            all_reviews, key=lambda x: x.created_at, reverse=True
+        )
+
+        same_product_reviews = []
+        other_reviews = []
+        for review in all_reviews_sorted:
+            if review.product.name == product_name:
+                same_product_reviews.append(review)
+            else:
+                other_reviews.append(review)
+
+        all_reviews_with_images = same_product_reviews + other_reviews
+
+        images = [
+            image.image
+            for review in all_reviews_with_images
+            for image in review.images.all()
+        ][start:end]
+
+        response_data = {
+            "images": images,
+        }
+        return Response(response_data)
