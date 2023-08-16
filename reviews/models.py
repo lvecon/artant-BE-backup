@@ -28,18 +28,21 @@ class Review(CommonModel):
     )
 
     def __str__(self):
-        return f"{self.user} / {self.rating}"
+        return f"{self.user} / {self.product}/ {self.content}"
 
 
 class ReviewPhoto(CommonModel):
-    image = models.ImageField()
+    image = models.URLField()
     review = models.ForeignKey(
         "Review",
         null=True,
         blank=True,
         on_delete=models.CASCADE,
-        related_name="photo",
+        related_name="images",
     )
+
+    def __str__(self):
+        return f"{self.review} "
 
 
 class ReviewReply(CommonModel):
@@ -48,11 +51,13 @@ class ReviewReply(CommonModel):
         on_delete=models.CASCADE,
         related_name="reply",
     )
-    shop = models.OneToOneField(
+    shop = models.ForeignKey(
         "users.Shop",
         on_delete=models.CASCADE,
+        null=True,
+        related_name="reply",
     )
     content = models.TextField()
 
     def __str__(self):
-        return f"{self.shop.shop_name} / {self.content}"
+        return f"{self.review} / {self.content}"

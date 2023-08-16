@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Review, ReviewReply
+from .models import Review, ReviewReply, ReviewPhoto
 
 
 @admin.register(Review)
@@ -16,6 +16,14 @@ class ReviewAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReviewReply)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = (
+        "__str__",
+        "review",
+    )
+
+
+@admin.register(ReviewPhoto)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = (
         "__str__",

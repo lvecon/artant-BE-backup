@@ -231,13 +231,15 @@ class ProductReviews(APIView):
         end = start + page_size
         product = self.get_object(pk)
         total_reviews = product.reviews.count()
+        reviews = product.reviews.all()
+        reviews = reviews.order_by("-created_at")
         serializer = ReviewSerializer(
-            product.reviews.all()[start:end],
+            reviews[start:end],
             many=True,
         )
 
         response_data = {
-            "total_reviews": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
+            "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
             "reviews": serializer.data,
         }
         return Response(response_data)

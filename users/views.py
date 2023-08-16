@@ -8,8 +8,9 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import Shop, User
+from reviews.models import Review
 from . import serializers
-from reviews.serializers import ReviewSerializer
+from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
 from products.serializers import ProductListSerializer
 
 
@@ -161,13 +162,17 @@ class ShopReviews(APIView):
             all_reviews.extend(reviews)
 
         total_reviews = len(all_reviews)
+
+        all_reviews_sorted = sorted(
+            all_reviews, key=lambda x: x.created_at, reverse=True
+        )
         serializer = ReviewSerializer(
-            all_reviews[start:end],
+            all_reviews_sorted[start:end],
             many=True,
         )
 
         response_data = {
-            "total_reviews": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
+            "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
             "reviews": serializer.data,
         }
 

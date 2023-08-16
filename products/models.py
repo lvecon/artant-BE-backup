@@ -175,6 +175,9 @@ class ProductImage(CommonModel):
         related_name="images",
     )
 
+    def __str__(self):
+        return f"{self.product}"
+
 
 class ProductVideo(CommonModel):
     video = models.URLField()
@@ -183,6 +186,9 @@ class ProductVideo(CommonModel):
         on_delete=models.CASCADE,
         related_name="video",
     )
+
+    def __str__(self):
+        return f"{self.product}"
 
 
 class ProductVariant(CommonModel):

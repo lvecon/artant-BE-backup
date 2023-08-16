@@ -4,6 +4,7 @@ from rest_framework import serializers
 from favorites.models import FavoritesItem
 from .models import Product, ProductImage, ProductTag, ProductVideo, Color
 from datetime import datetime, timedelta
+from users.serializers import TinyUserSerializer
 
 
 class ProductTagSerializer(ModelSerializer):
@@ -38,7 +39,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     shop_name = serializers.SerializerMethodField()
     shop_pk = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
-    seller_name = serializers.SerializerMethodField()
+    sellers = serializers.SerializerMethodField()
     shipping_date = serializers.SerializerMethodField()
     images = ImageSerializer(many=True, read_only=True)
     colors = ColorSerializer(many=True, read_only=True)
@@ -51,7 +52,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "name",
             "shop_pk",
             "shop_name",
-            "seller_name",
+            "sellers",
             "original_price",
             "price",
             "discount_rate",
@@ -108,8 +109,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_shop_pk(self, product):
         return product.shop.pk
 
-    def get_seller_name(self, product):
-        return product.shop.user.name
+    def get_sellers(self, product):
+        users = product.shop.users.all()
+        serializer = TinyUserSerializer(users, many=True)
+        return serializer.data
 
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
@@ -196,3 +199,23 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
+
+
+class TinyProductSerializer(serializers.ModelSerializer):
+    discount_rate = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = (
+            "pk",
+            "name",
+            "original_price",
+            "price",
+            "discount_rate",
+        )
+
+    def get_discount_rate(self, product):
+        if product.original_price & product.price:
+            return int((1 - product.price / product.original_price) * 100)
+        else:
+            return 0
