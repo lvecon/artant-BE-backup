@@ -43,10 +43,13 @@ class TinyShopSerializer(ModelSerializer):
 
 
 class ShopDetailSerializer(ModelSerializer):
+    users = TinyUserSerializer(many=True, read_only=True)
+
     class Meta:
         model = Shop
         fields = (
             "pk",
+            "users",
             "shop_name",
             "avatar",
             "background_pic",

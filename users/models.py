@@ -37,7 +37,7 @@ class User(AbstractUser):
     address = models.ManyToManyField(
         Address,
         blank=True,
-        related_name="user_addresses",
+        related_name="+",
     )
     default_shipping_address = models.OneToOneField(
         Address,
@@ -59,10 +59,8 @@ class User(AbstractUser):
 
 
 class Shop(CommonModel):
-    user = models.OneToOneField(
-        "User",
-        on_delete=models.CASCADE,
-    )
+    users = models.ManyToManyField("User", related_name="shop")
+
     avatar = models.URLField(blank=True, null=True)
     background_pic = models.URLField(blank=True, null=True)
     shop_name = models.CharField(max_length=256)
@@ -71,8 +69,9 @@ class Shop(CommonModel):
     expiration = models.TimeField(blank=True, null=True)
     address = models.OneToOneField(
         Address,
-        related_name="shop_address",
-        on_delete=models.CASCADE,
+        related_name="+",
+        null=True,
+        on_delete=models.SET_NULL,
     )
     cancellation = models.BooleanField(default=False)
     shop_policy_updated_at = models.TimeField(auto_created=True)
@@ -101,9 +100,9 @@ class Section(models.Model):
     shop = models.ForeignKey(
         "Shop",
         on_delete=models.CASCADE,
-        related_name="sections",
+        related_name="+",
     )
     product = models.ManyToManyField(
         "products.Product",
-        related_name="products",
+        related_name="+",
     )

@@ -160,11 +160,18 @@ class ShopReviews(APIView):
             reviews = product.reviews.all()
             all_reviews.extend(reviews)
 
+        total_reviews = len(all_reviews)
         serializer = ReviewSerializer(
             all_reviews[start:end],
             many=True,
         )
-        return Response(serializer.data)
+
+        response_data = {
+            "total_reviews": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
+            "reviews": serializer.data,
+        }
+
+        return Response(response_data)
 
 
 class ShopProducts(APIView):

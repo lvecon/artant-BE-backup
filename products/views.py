@@ -229,12 +229,18 @@ class ProductReviews(APIView):
         page_size = settings.PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
-        room = self.get_object(pk)
+        product = self.get_object(pk)
+        total_reviews = product.reviews.count()
         serializer = ReviewSerializer(
-            room.reviews.all()[start:end],
+            product.reviews.all()[start:end],
             many=True,
         )
-        return Response(serializer.data)
+
+        response_data = {
+            "total_reviews": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
+            "reviews": serializer.data,
+        }
+        return Response(response_data)
 
     def post(self, request, pk):
         serializer = ReviewSerializer(data=request.data)
