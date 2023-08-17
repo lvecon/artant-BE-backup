@@ -1,7 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 
-from favorites.models import FavoritesItem
+from favorites.models import FavoriteItem
 from .models import Product, ProductImage, ProductTag, ProductVideo, Color
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
@@ -94,7 +94,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request:
             if request.user.is_authenticated:
-                return FavoritesItem.objects.filter(
+                return FavoriteItem.objects.filter(
                     user=request.user,
                     pk=product.pk,
                 ).exists()
@@ -179,7 +179,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request:
             if request.user.is_authenticated:
-                return FavoritesItem.objects.filter(
+                return FavoriteItem.objects.filter(
                     user=request.user,
                     pk=product.pk,
                 ).exists()

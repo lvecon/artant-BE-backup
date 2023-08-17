@@ -1,9 +1,9 @@
 from django.contrib import admin
 
-from favorites.models import FavoriteShop, FavoritesItem
+from favorites.models import FavoriteShop, FavoriteItem
 
 
-@admin.register(FavoritesItem)
+@admin.register(FavoriteItem)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ("__str__",)
 

@@ -2,8 +2,8 @@ from django.db import models
 
 
 # Create your models here.
-class FavoritesItem(models.Model):
-    product = models.ManyToManyField(
+class FavoriteItem(models.Model):
+    products = models.ManyToManyField(
         "products.Product",
         related_name="favorites_item",
     )
@@ -18,7 +18,7 @@ class FavoritesItem(models.Model):
 
 
 class FavoriteShop(models.Model):
-    shop = models.ManyToManyField(
+    shops = models.ManyToManyField(
         "users.Shop",
         related_name="favorites_shop",
     )
@@ -29,4 +29,4 @@ class FavoriteShop(models.Model):
     )
 
     def __str__(self):
-        return f"{self.user} likes {self.shop}"
+        return f"{self.user}'s favorite shops"
