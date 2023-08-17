@@ -16,6 +16,7 @@ from rest_framework.exceptions import (
 )
 from django.db.models import F, Count
 from reviews.serializers import ReviewSerializer
+from django.db.models.functions import Length
 
 
 # Create your views here.
@@ -36,7 +37,9 @@ class Products(APIView):
             q &= Q(colors__name__in=colors)
         if category_type:
             q &= Q(category__name=category_type)
-        q &= Q(price__range=(price_lower_range, price_upper_range))
+
+        if price_lower_range != 0 or price_upper_range != 10000000:
+            q &= Q(price__range=(price_lower_range, price_upper_range))
 
         products = Product.objects.filter(q)
         total_products = products.count()
@@ -226,23 +229,49 @@ class ProductReviews(APIView):
         except ValueError:
             page = 1
 
+        query_type = self.request.GET.get("sort", None)
+
         page_size = settings.PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
         product = self.get_object(pk)
         total_reviews = product.reviews.count()
         reviews = product.reviews.all()
-        reviews = reviews.order_by("-created_at")
-        serializer = ReviewSerializer(
-            reviews[start:end],
-            many=True,
-        )
 
-        response_data = {
-            "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
-            "reviews": serializer.data,
-        }
-        return Response(response_data)
+        if query_type == "created_at":
+            reviews = reviews.order_by("-created_at")
+            serializer = ReviewSerializer(
+                reviews[start:end],
+                many=True,
+            )
+
+            response_data = {
+                "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
+                "reviews": serializer.data,
+            }
+            return Response(response_data)
+
+        else:  # suggested
+            reviews = reviews.annotate(
+                recommendation_weight=(Length("content"))
+                + F("rating") * 100
+                + Count("images") * 40
+            )
+
+            # 추천 가중치를 기준으로 정렬
+            reviews = reviews.order_by("-recommendation_weight")
+
+            # 최종 정렬 결과를 반환
+            serializer = ReviewSerializer(
+                reviews[start:end],
+                many=True,
+            )
+
+            response_data = {
+                "total_count": reviews.count(),
+                "reviews": serializer.data,
+            }
+            return Response(response_data)
 
     def post(self, request, pk):
         serializer = ReviewSerializer(data=request.data)

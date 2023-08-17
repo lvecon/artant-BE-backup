@@ -149,7 +149,7 @@ class ShopReviews(APIView):
             page = int(page)  # Type change
         except ValueError:
             page = 1
-
+        query_type = self.request.GET.get("sort", None)
         page_size = settings.PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
@@ -163,20 +163,41 @@ class ShopReviews(APIView):
 
         total_reviews = len(all_reviews)
 
-        all_reviews_sorted = sorted(
-            all_reviews, key=lambda x: x.created_at, reverse=True
-        )
-        serializer = ReviewSerializer(
-            all_reviews_sorted[start:end],
-            many=True,
-        )
+        if query_type == "created_at":
+            all_reviews_sorted = sorted(
+                all_reviews, key=lambda x: x.created_at, reverse=True
+            )
+            serializer = ReviewSerializer(
+                all_reviews_sorted[start:end],
+                many=True,
+            )
 
-        response_data = {
-            "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
-            "reviews": serializer.data,
-        }
+            response_data = {
+                "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
+                "reviews": serializer.data,
+            }
 
-        return Response(response_data)
+            return Response(response_data)
+
+        else:  # suggested
+            all_reviews = sorted(
+                all_reviews,
+                key=lambda x: (
+                    len(x.content),
+                    x.rating * 100 + x.images.count() * 40,
+                ),
+                reverse=True,
+            )
+            serializer = ReviewSerializer(
+                all_reviews[start:end],
+                many=True,
+            )
+
+            response_data = {
+                "total_count": total_reviews,
+                "reviews": serializer.data,
+            }
+            return Response(response_data)
 
 
 class ShopProducts(APIView):

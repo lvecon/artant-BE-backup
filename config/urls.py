@@ -21,7 +21,7 @@ from django.conf import settings
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/favorites", include("favorites.urls")),
+    path("api/v1/favorites/", include("favorites.urls")),
     path("api/v1/users/", include("users.urls")),
     path("api/v1/products/", include("products.urls")),
     path("api/v1/reviews/", include("reviews.urls")),
