@@ -278,7 +278,7 @@ class ProductReviews(APIView):
         if serializer.is_valid():
             review = serializer.save(
                 user=request.user,
-                room=self.get_object(pk),
+                product=self.get_object(pk),
             )
             serializer = ReviewSerializer(review)
             return Response(serializer.data)

@@ -96,7 +96,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             if request.user.is_authenticated:
                 return FavoriteItem.objects.filter(
                     user=request.user,
-                    pk=product.pk,
+                    products__pk=product.pk,
                 ).exists()
         return False
 
@@ -177,11 +177,12 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_is_liked(self, product):
         request = self.context.get("request")
+
         if request:
             if request.user.is_authenticated:
                 return FavoriteItem.objects.filter(
                     user=request.user,
-                    pk=product.pk,
+                    products__pk=product.pk,  # 이 부분을 수정하여 products 필드의 pk를 확인합니다.
                 ).exists()
         return False
 

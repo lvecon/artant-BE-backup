@@ -1,7 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 from .models import FavoriteItem, FavoriteShop
 from products.serializers import ProductListSerializer
-from users.serializers import TinyShopSerializer
+from users.serializers import ShopSerializer
 
 
 class TinyFavoriteItemSerializer(ModelSerializer):
@@ -34,7 +34,7 @@ class TinyFavoriteShopSerializer(ModelSerializer):
 
 
 class FavoriteShopSerializer(ModelSerializer):
-    shops = TinyShopSerializer(many=True, read_only=True)
+    shops = ShopSerializer(many=True, read_only=True)
 
     class Meta:
         model = FavoriteShop
