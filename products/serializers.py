@@ -2,7 +2,15 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 
 from favorites.models import FavoriteItem
-from .models import Product, ProductImage, ProductTag, ProductVideo, Color
+from .models import (
+    Product,
+    ProductImage,
+    ProductTag,
+    ProductVideo,
+    Color,
+    VariantOption,
+    VariantValue,
+)
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
 
@@ -31,6 +39,20 @@ class ColorSerializer(serializers.ModelSerializer):
         fields = ("pk", "name")
 
 
+class VariantValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VariantValue
+        fields = ("value",)
+
+
+class VariantOptionSerializer(serializers.ModelSerializer):
+    value = VariantValueSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = VariantOption
+        fields = ["name", "value"]
+
+
 class ProductDetailSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
@@ -44,6 +66,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ImageSerializer(many=True, read_only=True)
     colors = ColorSerializer(many=True, read_only=True)
     video = VideoSerializer()
+    options = VariantOptionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -82,6 +105,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "thumbnail",
             "created_at",
             "category",
+            "options",
             "item_width",
             "item_height",
             "description",

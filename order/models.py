@@ -47,7 +47,7 @@ class OrderLine(CommonModel):
         on_delete=models.CASCADE,
     )
     variant = models.ForeignKey(
-        "products.ProductVariant",
+        "products.VariantValue",
         related_name="order_lines",
         on_delete=models.SET_NULL,
         blank=True,

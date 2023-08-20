@@ -11,6 +11,7 @@ class Cart(CommonModel):
         null=True,
         on_delete=models.CASCADE,
     )
+
     billing_address = models.ForeignKey(
         "users.Address",
         related_name="+",
@@ -39,9 +40,15 @@ class CartLine(CommonModel):
         related_name="lines",
         on_delete=models.CASCADE,
     )
-    variant = models.ForeignKey(
-        "products.ProductVariant",
+
+    # product = models.ForeignKey(
+    #     "products.Product",
+    #     related_name="+",
+    #     on_delete=models.CASCADE,
+    # )
+
+    variant = models.ManyToManyField(
+        "products.VariantValue",
         related_name="+",
-        on_delete=models.CASCADE,
     )
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])

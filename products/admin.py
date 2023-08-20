@@ -7,7 +7,6 @@ from products.models import (
     Product,
     ProductImage,
     ProductTag,
-    ProductVariant,
     ProductVideo,
     UserProductTimestamp,
     VariantOption,
@@ -53,19 +52,10 @@ class ProductTagAdmin(admin.ModelAdmin):
     list_display = ("tag",)
 
 
-@admin.register(ProductVariant)
-class ProductTagAdmin(admin.ModelAdmin):
-    list_display = (
-        "name",
-        "product",
-        "getVariant",
-    )
-
-
 @admin.register(VariantOption)
 class VariantOptionAdmin(admin.ModelAdmin):
     list_display = (
-        "option",
+        "name",
         "product",
     )
 
@@ -73,7 +63,7 @@ class VariantOptionAdmin(admin.ModelAdmin):
 @admin.register(VariantValue)
 class VariantValueAdmin(admin.ModelAdmin):
     list_display = (
-        "options",
+        "option",
         "value",
     )
 

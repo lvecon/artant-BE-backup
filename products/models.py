@@ -191,27 +191,8 @@ class ProductVideo(CommonModel):
         return f"{self.product}"
 
 
-class ProductVariant(CommonModel):
-    name = models.CharField(max_length=255, blank=True)
-    product = models.ForeignKey(
-        "Product",
-        related_name="variants",
-        on_delete=models.CASCADE,
-    )
-    variant = models.ManyToManyField(
-        "VariantValue",
-        related_name="variant",
-    )
-
-    def __str__(self):
-        return self.name
-
-    def getVariant(self):
-        return [vari.value for vari in self.variant.all()]
-
-
-class VariantOption(models.Model):  # 개인맞춤화, 마감
-    option = models.CharField(max_length=32)
+class VariantOption(models.Model):  # 개인맞춤화, 마감, 사이즈
+    name = models.CharField(max_length=32)
     product = models.ForeignKey(
         "Product",
         related_name="options",
@@ -219,14 +200,15 @@ class VariantOption(models.Model):  # 개인맞춤화, 마감
     )
 
     def __str__(self):
-        return f"{self.option} for {self.product}"
+        return f"{self.name} for {self.product}"
 
 
-class VariantValue(models.Model):  # 마감 - 거칠게, 부드럽게 등
+class VariantValue(models.Model):  # 옵션별 상세 value
     value = models.CharField(max_length=32)
-    options = models.ForeignKey(
+    option = models.ForeignKey(
         "VariantOption",
         on_delete=models.CASCADE,
+        related_name="value",
     )
 
     def __str__(self):

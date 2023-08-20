@@ -10,4 +10,4 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(CartLine)
 class CartAdmin(admin.ModelAdmin):
-    list_display = ("variant",)
+    list_display = ("__str__",)
