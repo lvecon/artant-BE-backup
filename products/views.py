@@ -46,7 +46,7 @@ class Products(APIView):
             q &= (
                 Q(name__icontains=search)
                 | Q(description__icontains=search)
-                | Q(shop__shop_name__icontains=search)
+                | Q(shop__shop_name__exact=search)
                 | Q(colors__name__exact=search)
             )
 
