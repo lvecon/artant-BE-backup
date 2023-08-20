@@ -200,7 +200,7 @@ class VariantOption(models.Model):  # 개인맞춤화, 마감, 사이즈
     )
 
     def __str__(self):
-        return f"{self.name} for {self.product}"
+        return f"{self.name} : {self.product}"
 
 
 class VariantValue(models.Model):  # 옵션별 상세 value
@@ -212,7 +212,7 @@ class VariantValue(models.Model):  # 옵션별 상세 value
     )
 
     def __str__(self):
-        return self.value
+        return f"{self.value} : {self.option.product}"
 
 
 class UserProductTimestamp(models.Model):

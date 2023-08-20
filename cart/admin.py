@@ -9,5 +9,8 @@ class CartAdmin(admin.ModelAdmin):
 
 
 @admin.register(CartLine)
-class CartAdmin(admin.ModelAdmin):
-    list_display = ("__str__",)
+class CartLineAdmin(admin.ModelAdmin):
+    list_display = (
+        "cart",
+        "product",
+    )

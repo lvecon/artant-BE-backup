@@ -5,50 +5,38 @@ from common.models import CommonModel
 
 
 class Cart(CommonModel):
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         "users.User",
         blank=True,
         null=True,
         on_delete=models.CASCADE,
     )
 
-    billing_address = models.ForeignKey(
-        "users.Address",
-        related_name="+",
-        editable=False,
-        null=True,
-        on_delete=models.SET_NULL,
-    )
-    shipping_address = models.ForeignKey(
-        "users.Address",
-        related_name="+",
-        editable=False,
-        null=True,
-        on_delete=models.SET_NULL,
-    )
-
     def __str__(self):
         return f"{self.user}'s cart"
 
     def __iter__(self):
-        return iter(self.lines.all())
+        return [str(cart_line) for cart_line in self.cartline.all()]
 
 
 class CartLine(CommonModel):
     cart = models.ForeignKey(
         Cart,
-        related_name="lines",
+        related_name="cartline",
         on_delete=models.CASCADE,
     )
 
-    # product = models.ForeignKey(
-    #     "products.Product",
-    #     related_name="+",
-    #     on_delete=models.CASCADE,
-    # )
+    product = models.ForeignKey(
+        "products.Product",
+        related_name="cartline",
+        on_delete=models.CASCADE,
+    )
 
     variant = models.ManyToManyField(
         "products.VariantValue",
         related_name="+",
     )
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+
+    def __str__(self):
+        return f"{self.product.name} in {self.cart.user.name}"
