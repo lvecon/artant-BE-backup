@@ -29,6 +29,7 @@ class Products(APIView):
         category_type = self.request.GET.get("category", None)
         price_upper_range = self.request.GET.get("PriceUpper", 10000000)
         price_lower_range = self.request.GET.get("PriceLower", 0)
+        search = self.request.GET.get("search", None)
         query_type = self.request.GET.get("sort", None)
 
         q = Q()
@@ -40,6 +41,14 @@ class Products(APIView):
 
         if price_lower_range != 0 or price_upper_range != 10000000:
             q &= Q(price__range=(price_lower_range, price_upper_range))
+
+        if search:
+            q &= (
+                Q(name__icontains=search)
+                | Q(description__icontains=search)
+                | Q(shop__shop_name__icontains=search)
+                | Q(colors__name__exact=search)
+            )
 
         products = Product.objects.filter(q)
         total_products = products.count()
