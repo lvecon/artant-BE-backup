@@ -42,7 +42,10 @@ class ColorSerializer(serializers.ModelSerializer):
 class VariantValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = VariantValue
-        fields = ("value",)
+        fields = (
+            "pk",
+            "value",
+        )
 
 
 class VariantOptionSerializer(serializers.ModelSerializer):

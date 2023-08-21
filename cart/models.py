@@ -35,6 +35,7 @@ class CartLine(CommonModel):
     variant = models.ManyToManyField(
         "products.VariantValue",
         related_name="+",
+        blank=True,
     )
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
 

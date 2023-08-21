@@ -8,20 +8,26 @@ from users.serializers import TinyUserSerializer
 class CartLineSerializer(ModelSerializer):
     product = ProductListSerializer()
     variant = VariantValueSerializer(many=True, read_only=True)
-    count_in_other_carts = serializers.SerializerMethodField()
+    count_in_carts = serializers.SerializerMethodField()
 
     class Meta:
         model = CartLine
-        fields = ("product", "variant", "quantity", "count_in_other_carts")
+        fields = (
+            "pk",
+            "product",
+            "variant",
+            "quantity",
+            "count_in_carts",
+        )
 
-    def get_count_in_other_carts(self, cart_line):
+    def get_count_in_carts(self, cart_line):
         product = cart_line.product
 
-        count_in_other_carts = CartLine.objects.filter(
+        count_in_carts = CartLine.objects.filter(
             product=product,
         ).count()
 
-        return count_in_other_carts
+        return count_in_carts
 
 
 class CartSerializer(ModelSerializer):
