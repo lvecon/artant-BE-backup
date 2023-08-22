@@ -12,13 +12,13 @@ class Review(CommonModel):
     )
     content = models.TextField()
     rating = models.PositiveIntegerField(validators=[MaxValueValidator(5)])
-    raitng_item_quality = models.PositiveIntegerField(
+    rating_item_quality = models.PositiveIntegerField(
         validators=[MaxValueValidator(5)], null=True, blank=True
     )
-    raitng_shipping = models.PositiveIntegerField(
+    rating_shipping = models.PositiveIntegerField(
         validators=[MaxValueValidator(5)], null=True, blank=True
     )
-    raitng_customer_service = models.PositiveIntegerField(
+    rating_customer_service = models.PositiveIntegerField(
         validators=[MaxValueValidator(5)], null=True, blank=True
     )
     product = models.ForeignKey(

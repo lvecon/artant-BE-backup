@@ -219,7 +219,7 @@ class ShopProducts(APIView):
         return Response(serializer.data)
 
 
-class ReviewImages(APIView):
+class ReviewPhotos(APIView):
     def get_object(self, pk):
         try:
             return Shop.objects.get(pk=pk)

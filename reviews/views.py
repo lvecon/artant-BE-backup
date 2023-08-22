@@ -25,9 +25,14 @@ class ReviewDetails(APIView):
 
     def get(self, request, pk):
         review = self.get_object(pk)
-        
+
         serializer = ReviewDetailSerializer(
             review,
             context={"request": request},
         )
         return Response(serializer.data)
+
+    def delete(self, request, pk, review_pk):
+        review = self.get_object(review_pk)
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

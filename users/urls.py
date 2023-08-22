@@ -14,7 +14,7 @@ urlpatterns = [
     path("shops/<int:pk>", views.ShopDetail.as_view()),
     path("shops/<int:pk>/reviews", views.ShopReviews.as_view()),
     path(
-        "shops/<int:pk>/reviews/images/<int:product_pk>", views.ReviewImages.as_view()
+        "shops/<int:pk>/reviews/images/<int:product_pk>", views.ReviewPhotos.as_view()
     ),
     path("shops/<int:pk>/products", views.ShopProducts.as_view()),
 ]

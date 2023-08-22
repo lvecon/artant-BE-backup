@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
 from products import serializers
 from products.models import Product, UserProductTimestamp
+from reviews.models import Review, ReviewReply
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework import status
 from django.utils.timezone import now
@@ -15,7 +16,12 @@ from rest_framework.exceptions import (
     PermissionDenied,
 )
 from django.db.models import F, Count
-from reviews.serializers import ReviewSerializer
+from reviews.serializers import (
+    ReviewSerializer,
+    ReviewPhotoSerializer,
+    ReviewDetailSerializer,
+    ReviewReplySerializer,
+)
 from django.db.models.functions import Length
 
 
@@ -283,11 +289,113 @@ class ProductReviews(APIView):
             return Response(response_data)
 
     def post(self, request, pk):
+        user = request.user
+        product = self.get_object(pk)
+        image_urls = request.data.get("images", [])
+
         serializer = ReviewSerializer(data=request.data)
         if serializer.is_valid():
             review = serializer.save(
-                user=request.user,
-                product=self.get_object(pk),
+                user=user,
+                product=product,
             )
+
+            if image_urls:
+                images_data = [
+                    {"image": url, "review": review.pk} for url in image_urls
+                ]
+                images_serializer = ReviewPhotoSerializer(data=images_data, many=True)
+                images_serializer.is_valid(raise_exception=True)
+                images = images_serializer.save()
+
+                review.images.set(images)
+
             serializer = ReviewSerializer(review)
             return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+
+
+class ProductReviewDetail(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, review_pk):
+        try:
+            return Review.objects.get(pk=review_pk)
+        except Product.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk, review_pk):
+        review = self.get_object(review_pk)
+
+        serializer = ReviewSerializer(
+            review,
+        )
+
+        return Response(serializer.data)
+
+    def put(self, request, pk, review_pk):
+        review = self.get_object(review_pk)
+        serializer = ReviewSerializer(review, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, review_pk):
+        review = self.get_object(review_pk)
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProductReviewReply(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, review_pk):
+        try:
+            return Review.objects.get(pk=review_pk).reply
+        except ReviewReply.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk, review_pk):
+        reply = self.get_object(review_pk)
+
+        serializer = ReviewReplySerializer(
+            reply,
+        )
+
+        return Response(serializer.data)
+
+    def post(self, request, pk, review_pk):
+        review = Review.objects.get(pk=review_pk)
+        user_shops = request.user.shop.all()
+        try:
+            matching_shop = user_shops.get(pk=review.product.shop.pk)
+        except:
+            return Response(
+                {"error": "You don't have permission to post a reply for this review."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = ReviewReplySerializer(data=request.data)
+        if serializer.is_valid():
+            reply = serializer.save(review=review, shop=matching_shop)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk, review_pk):
+        reply = self.get_object(review_pk)
+
+        serializer = ReviewReplySerializer(reply, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, review_pk):
+        reply = self.get_object(review_pk)
+        reply.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

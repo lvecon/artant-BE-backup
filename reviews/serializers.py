@@ -5,7 +5,7 @@ from .models import Review, ReviewPhoto, ReviewReply
 from datetime import datetime
 
 
-class ReviewImageSerializer(serializers.ModelSerializer):
+class ReviewPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewPhoto
         fields = ("pk", "image")
@@ -19,6 +19,7 @@ class ReviewReplySerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewReply
         fields = (
+            "pk",
             "shop_pk",
             "shop_name",
             "content",
@@ -37,8 +38,8 @@ class ReviewReplySerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = TinyUserSerializer(read_only=True)  # read only. valid even no User
-    images = ReviewImageSerializer(many=True, read_only=True)
-    reply = ReviewReplySerializer()
+    images = ReviewPhotoSerializer(many=True, read_only=True)
+    reply = serializers.SerializerMethodField()
     product_name = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
@@ -51,9 +52,9 @@ class ReviewSerializer(serializers.ModelSerializer):
             "content",
             "rating",
             "created_at",
-            "raitng_item_quality",
-            "raitng_shipping",
-            "raitng_customer_service",
+            "rating_item_quality",
+            "rating_shipping",
+            "rating_customer_service",
             "images",
             "reply",
         )
@@ -63,6 +64,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def get_created_at(self, review):
         return review.created_at.strftime("%Y-%m-%d")
+
+    def get_reply(self, obj):
+        if hasattr(obj, "reply"):  # Check if reply exists
+            return ReviewReplySerializer(obj.reply).data
+        return None  # No reply, return None or any suitable value
 
 
 class ReviewDetailSerializer(serializers.ModelSerializer):
