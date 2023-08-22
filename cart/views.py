@@ -14,12 +14,11 @@ class CartView(APIView):
 
     def get(self, request):
         user = request.user
-        cart = Cart.objects.filter(user=user)
+        cart = Cart.objects.get(user=user)
 
         serializer = CartSerializer(
             cart,
             context={"request": request},
-            many=True,
         )
         return Response(serializer.data)
 
@@ -84,7 +83,10 @@ class CartView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
-        pass
+        user = request.user
+        cart = Cart.objects.get(user=user)
+        cart.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CartLineView(APIView):
