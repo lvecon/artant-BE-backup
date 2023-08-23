@@ -4,7 +4,7 @@ from events.models import Event, EventImage
 
 
 @admin.register(Event)
-class eventAdmin(admin.ModelAdmin):
+class EventAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "contents",

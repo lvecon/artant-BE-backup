@@ -6,7 +6,7 @@ from django.core.validators import MaxValueValidator
 
 class Review(CommonModel):
     user = models.ForeignKey(
-        "users.user",
+        "users.User",
         on_delete=models.CASCADE,
         related_name="reviews",
     )

@@ -46,6 +46,7 @@ CUSTOM_APPS = [
     "payments.apps.PaymentsConfig",
     "direct_messages.apps.DirectMessagesConfig",
     "events.apps.EventsConfig",
+    "product_collections.apps.ProductCollectionsConfig",
 ]
 
 SYSTEM_APPS = [
