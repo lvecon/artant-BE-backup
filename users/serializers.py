@@ -16,20 +16,29 @@ class TinyUserSerializer(ModelSerializer):
 
 
 class PrivateUserSerializer(ModelSerializer):
+    shop_pks = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        exclude = (
-            "password",
-            "is_superuser",
-            "is_staff",
-            "is_active",
-            "first_name",
-            "last_name",
-            "groups",
-            "user_permissions",
-            "last_login",
-            "is_confirmed",
+        fields = (
+            "pk",
+            "shop_pks",
+            "username",
+            "avatar",
+            "email",
+            "name",
+            "gender",
+            "birthday",
+            "description",
+            "birthday",
+            "default_shipping_address",
+            "default_billing_address",
+            "address",
         )
+
+    def get_shop_pks(self, user):
+        shop_pks = user.shop.values_list("pk", flat=True)
+        return list(shop_pks)
 
 
 class TinyShopSerializer(ModelSerializer):
