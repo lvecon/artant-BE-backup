@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from events.models import event
+from events.models import Event, EventImage
 
 
-@admin.register(event)
-class ChattingRoomAdmin(admin.ModelAdmin):
+@admin.register(Event)
+class eventAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "contents",
@@ -12,3 +12,8 @@ class ChattingRoomAdmin(admin.ModelAdmin):
         "updated_at",
     )
     list_filter = ("created_at",)
+
+
+@admin.register(EventImage)
+class EventImageAdmin(admin.ModelAdmin):
+    list_display = ("__str__",)
