@@ -113,7 +113,19 @@ class LogOut(APIView):
 
 class Shops(APIView):
     def get(self, request):
-        sorted_shops = Shop.objects.order_by("-is_star_seller", "-created_at")
+        try:
+            page = request.query_params.get("page", 1)  # ( ,default value)
+            page = int(page)  # Type change
+        except ValueError:
+            page = 1
+
+        page_size = settings.ARTIST_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        sorted_shops = Shop.objects.order_by("-is_star_seller", "-created_at")[
+            start:end
+        ]
 
         serializer = serializers.TinyShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
