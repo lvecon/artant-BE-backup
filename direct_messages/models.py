@@ -12,7 +12,8 @@ class ChattingRoom(CommonModel):
     )
 
     def __str__(self):
-        return "Chatting Room"
+        user_names = ", ".join([user.name for user in self.users.all()])
+        return f"Chatting Room of {user_names}"
 
 
 class Message(CommonModel):
