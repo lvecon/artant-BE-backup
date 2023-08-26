@@ -173,7 +173,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
-    # category = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
@@ -205,7 +205,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "is_liked",
             "thumbnail",
             # "created_at",
-            # "category",
+            "category",
         )
 
     def get_rating(self, product):

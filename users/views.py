@@ -55,9 +55,9 @@ class Users(APIView):
 
 
 class PublicUser(APIView):
-    def get(self, request, username):
+    def get(self, request, pk):
         try:
-            user = User.objects.get(username=username)
+            user = User.objects.get(pk=pk)
         except User.DoesNotExist:
             raise NotFound
         serializer = serializers.PrivateUserSerializer(user)
