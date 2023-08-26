@@ -116,7 +116,7 @@ class Product(CommonModel):
     has_variations = models.BooleanField(default=False)
     thumbnail = models.URLField()
     order_count = models.IntegerField(default=0)
-    cart_count = models.IntegerField(default=0)
+
     is_best_seller = models.BooleanField(default=False)
     is_return_exchange_available = models.BooleanField(default=False)
     is_frame_included = models.BooleanField(default=False)

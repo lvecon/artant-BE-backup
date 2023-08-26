@@ -74,7 +74,7 @@ class Shop(CommonModel):
         on_delete=models.SET_NULL,
     )
     cancellation = models.BooleanField(default=False)
-    shop_policy_updated_at = models.TimeField(auto_created=True)
+    shop_policy_updated_at = models.DateField(auto_created=True)
     instagram_url = models.URLField(blank=True, null=True)
     facebook_url = models.URLField(blank=True, null=True)
     website_url = models.URLField(blank=True, null=True)

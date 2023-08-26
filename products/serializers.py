@@ -13,6 +13,7 @@ from .models import (
 )
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
+from cart.models import CartLine
 
 
 class ProductTagSerializer(ModelSerializer):
@@ -66,6 +67,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     discount_rate = serializers.SerializerMethodField()
     sellers = serializers.SerializerMethodField()
     shipping_date = serializers.SerializerMethodField()
+    cart_count = serializers.SerializerMethodField()
     images = ImageSerializer(many=True, read_only=True)
     colors = ColorSerializer(many=True, read_only=True)
     video = VideoSerializer()
@@ -84,8 +86,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "discount_rate",
             "rating",
             "rating_count",
-            "stock",
             "cart_count",
+            "stock",
             "shipping_price",
             "free_shipping",
             "processing_min",
@@ -159,6 +161,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         max_shipping_date = today + timedelta(days=processing_max)
 
         return f"{min_shipping_date.month}월 {min_shipping_date.day}일 ~ {max_shipping_date.month}월 {max_shipping_date.day}일"
+
+    def get_cart_count(self, product):
+        count_in_carts = CartLine.objects.filter(
+            product=product,
+        ).count()
+
+        return count_in_carts
 
 
 class ProductListSerializer(serializers.ModelSerializer):

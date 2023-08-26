@@ -91,6 +91,11 @@ class ShopDetailSerializer(ModelSerializer):
             "shop_name",
             "avatar",
             "background_pic",
+            "description",
+            "announcement",
+            "expiration",
+            "cancellation",
+            "shop_policy_updated_at",
             "is_liked",
             "is_star_seller",
         )
