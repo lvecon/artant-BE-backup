@@ -57,7 +57,7 @@ class Products(APIView):
                 | Q(colors__name__exact=search)
             )
 
-        products = Product.objects.filter(q)
+        products = Product.objects.filter(q).distinct()
         total_products = products.count()
 
         if query_type == "created_at":
