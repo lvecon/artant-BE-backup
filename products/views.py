@@ -33,6 +33,7 @@ class Products(APIView):
         limit = int(self.request.GET.get("limit", 40))
         offset = int(self.request.GET.get("offset", 0))
         category_type = self.request.GET.get("category", None)
+
         price_upper_range = self.request.GET.get("PriceUpper", 10000000)
         price_lower_range = self.request.GET.get("PriceLower", 0)
         search = self.request.GET.get("search", None)
@@ -42,7 +43,7 @@ class Products(APIView):
 
         if colors:
             q &= Q(colors__name__in=colors)
-        if category_type:
+        if category_type and category_type != "모든작품":
             q &= Q(category__name=category_type)
 
         if price_lower_range != 0 or price_upper_range != 10000000:
@@ -56,7 +57,7 @@ class Products(APIView):
                 | Q(colors__name__exact=search)
             )
 
-        products = Product.objects.filter(q)
+        products = Product.objects.filter(q).distinct()
         total_products = products.count()
 
         if query_type == "created_at":
@@ -215,7 +216,7 @@ class RecentlyViewed(APIView):
         user = request.user
         recently_viewed_timestamps = UserProductTimestamp.objects.filter(
             user=user.pk
-        ).order_by("-timestamp")[:4]
+        ).order_by("-timestamp")[:5]
         recently_viewed_products = [
             timestamp.product for timestamp in recently_viewed_timestamps
         ]
