@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+import datetime
 from common.models import CommonModel
 from users import UserGenderChoices
 
@@ -24,12 +24,12 @@ class User(AbstractUser):
         blank=True,
         null=True,
     )
-    email = models.EmailField(unique=True, blank=True, null=True)
-    name = models.CharField(max_length=256, blank=True, unique=True)
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=256, unique=True)
     gender = models.CharField(
-        max_length=16, choices=UserGenderChoices.choices, null=True
+        max_length=16, choices=UserGenderChoices.choices, null=True, default="Female"
     )
-    birthday = models.DateField(null=True)
+    birthday = models.DateField(null=True, default=datetime.date(1977, 7, 7))
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_confirmed = models.BooleanField(default=True)
@@ -60,7 +60,6 @@ class User(AbstractUser):
 
 class Shop(CommonModel):
     users = models.ManyToManyField("User", related_name="shop")
-
     avatar = models.URLField(blank=True, null=True)
     background_pic = models.URLField(blank=True, null=True)
     shop_name = models.CharField(max_length=256)
@@ -71,10 +70,13 @@ class Shop(CommonModel):
         Address,
         related_name="+",
         null=True,
+        blank=True,
         on_delete=models.SET_NULL,
     )
-    cancellation = models.BooleanField(default=False)
-    shop_policy_updated_at = models.DateField(auto_created=True)
+    cancellation = models.BooleanField(default=True)
+    shop_policy_updated_at = models.DateField(
+        blank=True, null=True, default=datetime.date.today
+    )
     instagram_url = models.URLField(blank=True, null=True)
     facebook_url = models.URLField(blank=True, null=True)
     website_url = models.URLField(blank=True, null=True)

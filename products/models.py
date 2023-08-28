@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 from common.models import CommonModel
 from . import (
@@ -78,7 +80,7 @@ class Product(CommonModel):
         on_delete=models.CASCADE,
         related_name="product",
     )
-    stock = models.PositiveIntegerField(null=True, blank=True)
+    stock = models.PositiveIntegerField(null=True, blank=True, default=12)
     category = models.ManyToManyField(
         "Category",
         related_name="product",
@@ -86,14 +88,17 @@ class Product(CommonModel):
     made_by = models.CharField(
         max_length=140,
         choices=ProductMadeByChoices.choices,
+        default="I did",
     )
     product_type = models.CharField(
         max_length=140,
         choices=ProductTypeChoices.choices,
+        default="A finished product",
     )
     product_creation_date = models.CharField(
         max_length=140,
         choices=ProductCreationDate.choices,
+        default="Made To Order",
     )
     product_item_type = models.CharField(
         max_length=140,
@@ -103,19 +108,21 @@ class Product(CommonModel):
     colors = models.ManyToManyField(
         "products.Color",
         related_name="product",
+        null=True,
+        blank=True,
     )
-    processing_min = models.CharField(max_length=32, null=True, blank=True)
-    processing_max = models.CharField(max_length=32, null=True, blank=True)
-    shipping_price = models.CharField(max_length=32)
+    processing_min = models.CharField(max_length=32, default=3)
+    processing_max = models.CharField(max_length=32, default=7)
+    shipping_price = models.CharField(max_length=32, default=0)
     item_weight = models.CharField(max_length=32, null=True, blank=True)
     item_weight_unit = models.CharField(max_length=32, null=True, blank=True)
-    item_length = models.CharField(max_length=32, null=True, blank=True)
-    item_width = models.CharField(max_length=32, null=True, blank=True)
-    item_height = models.CharField(max_length=32, null=True, blank=True)
+    item_length = models.CharField(max_length=32, null=True, blank=True, default=20)
+    item_width = models.CharField(max_length=32, null=True, blank=True, default=60)
+    item_height = models.CharField(max_length=32, null=True, blank=True, default=90)
 
     has_variations = models.BooleanField(default=False)
     thumbnail = models.URLField()
-    order_count = models.IntegerField(default=0)
+    order_count = models.IntegerField(blank=True, default=0)
 
     is_best_seller = models.BooleanField(default=False)
     is_return_exchange_available = models.BooleanField(default=False)
@@ -157,6 +164,12 @@ class Product(CommonModel):
 
     def get_shop_name(product):
         return product.shop.shop_name
+
+
+@receiver(pre_save, sender=Product)
+def set_original_price(sender, instance, **kwargs):
+    if instance.original_price is None:
+        instance.original_price = instance.price
 
 
 class ProductTag(models.Model):

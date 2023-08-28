@@ -24,7 +24,7 @@ class ProductCreationDate(models.TextChoices):
 
 class ProductMadeByChoices(models.TextChoices):
     SELF = ("I did", "I did")
-    MEMBER = ("A memeber of my shop", "A memeber of my my shop")
+    MEMBER = ("A memeber of my shop", "A memeber of my shop")
     ANOTHER = ("Another company or person", "Another company or person")
 
 
