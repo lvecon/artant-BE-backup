@@ -12,4 +12,7 @@ urlpatterns = [
         views.ProductReviewReply.as_view(),
     ),
     path("recently-viewed", views.RecentlyViewed.as_view()),
+    path("photos/<int:pk>", PhotoDetail.as_view()),
+    path("photos/get-url", GetUploadURL.as_view()),
+    path("videos/get-url", GetVideoUploadURL.as_view()),
 ]

@@ -262,3 +262,21 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = "__all__"
+
+
+class PhotoSerializer(ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = (
+            "pk",
+            "image",
+        )
+
+
+class VideoSerializer(ModelSerializer):
+    class Meta:
+        model = ProductVideo
+        fields = (
+            "pk",
+            "video",
+        )
