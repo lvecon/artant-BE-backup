@@ -109,3 +109,9 @@ class ShopDetailSerializer(ModelSerializer):
                     shops__pk=shop.pk,
                 ).exists()
         return False
+
+
+class ShopCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = "__all__"

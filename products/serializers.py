@@ -256,3 +256,9 @@ class TinyProductSerializer(serializers.ModelSerializer):
             return int((1 - product.price / product.original_price) * 100)
         else:
             return 0
+
+
+class ProductCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = "__all__"

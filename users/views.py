@@ -8,11 +8,11 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import Shop, User
-from products.models import Product
+from products.models import Product, Category
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
-from products.serializers import ProductListSerializer
+from products.serializers import ProductListSerializer, ProductCreateSerializer
 
 
 class Me(APIView):
@@ -281,3 +281,50 @@ class ReviewPhotos(APIView):
             "images": images,
         }
         return Response(response_data)
+
+
+class CreateProduct(APIView):
+    def post(self, request, shop_pk):
+        user = request.user
+        try:
+            # 사용자가 소유한 샵을 찾음
+            shop = user.shop.get(pk=shop_pk)
+        except Shop.DoesNotExist:
+            return Response(
+                {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
+            )
+        category_name = request.data.get("category_name")
+
+        # 카테고리 이름으로 카테고리 객체를 가져옴
+        category = Category.objects.get(name=category_name)
+
+        # 부모 카테고리 이름으로 부모 카테고리 객체를 가져옴
+        parent_category = category.parent
+
+        data = request.data.copy()  # 요청 데이터를 복사해서 사용
+        data["shop"] = shop_pk
+        data["category"] = [
+            category.id,
+            parent_category.id,
+        ]  # 카테고리와 부모 카테고리의 ID를 리스트로 넘김
+
+        serializer = ProductCreateSerializer(data=data)
+
+        if serializer.is_valid():
+            serializer.save()  # 상품을 저장합니다.
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ShopCreate(APIView):
+    def post(self, request):
+        data = request.data.copy()
+        data["users"] = [request.user.id]
+        serializer = serializers.ShopCreateSerializer(data=data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

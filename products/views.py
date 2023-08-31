@@ -3,8 +3,10 @@ from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
 from products import serializers
+from users.models import Shop
 from products.models import Product, UserProductTimestamp
 from reviews.models import Review, ReviewReply
+from products.models import Category
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework import status
 from django.utils.timezone import now
@@ -140,20 +142,6 @@ class Products(APIView):
                 "products": serializer.data,
             }
             return Response(response_data)
-
-    def put(self, request):
-        user = request.user
-        serializer = serializers.PrivateUserSerializer(
-            user,
-            data=request.data,
-            partial=True,
-        )
-        if serializer.is_valid():
-            user = serializer.save()
-            serializer = serializers.PrivateUserSerializer(user)
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
 
 
 class ProductDetails(APIView):
