@@ -11,9 +11,17 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+import dj_database_url
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import environ
+
+env = environ.Env()
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'..
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -165,3 +173,6 @@ PAGE_SIZE = 3
 REVIEW_IMAGE_PAGE_SIZE = 4
 
 ARTIST_PAGE_SIZE = 4
+
+CF_ID = env("CF_ID")
+CF_TOKEN = env("CF_TOKEN")
