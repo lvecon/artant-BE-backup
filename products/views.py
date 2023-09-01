@@ -432,7 +432,7 @@ class GetVideoUploadURL(APIView):
     def post(self, request):
         url = f"https://api.cloudflare.com/client/v4/accounts/{settings.CF_ID}/stream/direct_upload"
 
-        payload = {"maxDurationSeconds": 3600}
+        payload = {"maxDurationSeconds": 60}
 
         try:
             response = requests.post(
@@ -457,3 +457,49 @@ class GetVideoUploadURL(APIView):
                 {"error": "Request to Cloudflare failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class ProductImages(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise NotFound
+
+    def post(self, request, pk):
+        product = self.get_object(pk)
+
+        # if request.user != room.owner:
+        #     raise PermissionDenied
+        serializer = serializers.PhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            photo = serializer.save(product=product)  # connect to room
+            serializer = serializers.PhotoSerializer(photo)
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+
+
+class ProductVideos(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise NotFound
+
+    def post(self, request, pk):
+        product = self.get_object(pk)
+
+        # if request.user != room.owner:
+        #     raise PermissionDenied
+        serializer = serializers.VideoSerializer(data=request.data)
+        if serializer.is_valid():
+            video = serializer.save(product=product)  # connect to room
+            serializer = serializers.VideoSerializer(video)
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
