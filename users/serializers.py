@@ -17,12 +17,16 @@ class TinyUserSerializer(ModelSerializer):
 
 class PrivateUserSerializer(ModelSerializer):
     shop_pks = serializers.SerializerMethodField()
+    shop_names = serializers.SerializerMethodField()
+    shop_avatars = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "pk",
             "shop_pks",
+            "shop_names",
+            "shop_avatars",
             "username",
             "avatar",
             "email",
@@ -38,6 +42,14 @@ class PrivateUserSerializer(ModelSerializer):
 
     def get_shop_pks(self, user):
         shop_pks = user.shop.values_list("pk", flat=True)
+        return list(shop_pks)
+
+    def get_shop_names(self, user):
+        shop_pks = user.shop.values_list("shop_name", flat=True)
+        return list(shop_pks)
+
+    def get_shop_avatars(self, user):
+        shop_pks = user.shop.values_list("avatar", flat=True)
         return list(shop_pks)
 
 
