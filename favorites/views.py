@@ -16,6 +16,8 @@ from .serializer import (
     TinyFavoriteShopSerializer,
     FavoriteShopSerializer,
 )
+from django.conf import settings
+from products.serializers import ProductListSerializer
 
 # Create your views here.
 
@@ -49,9 +51,24 @@ class UserFavoritesItems(APIView):
             raise NotFound
 
     def get(self, request, pk):
-        favorite_items = self.get_object(pk)
-        serializer = FavoriteItemSerializer(
-            favorite_items,
+        try:
+            page = request.query_params.get("page", 1)
+            page = int(page)
+        except ValueError:
+            page = 1
+
+        page_size = settings.ARTIST_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = page * page_size
+
+        favorite_item = self.get_object(pk)
+        products = favorite_item.products.all()  # 해당 사용자가 좋아하는 모든 Product 객체 가져오기
+
+        products_on_page = products[start:end]  # 페이지 범위에 해당하는 Product 객체 가져오기
+
+        serializer = ProductListSerializer(  # ProductSerializer는 실제로 사용하는 Product Serializer로 바꿔야 합니다.
+            products_on_page,
+            many=True,
             context={"request": request},
         )
         return Response(serializer.data)

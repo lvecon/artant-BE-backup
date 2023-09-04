@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import Shop, User
+from products.models import Product
 from favorites.models import FavoriteShop
 
 
@@ -54,6 +55,9 @@ class PrivateUserSerializer(ModelSerializer):
 
 
 class TinyShopSerializer(ModelSerializer):
+    # 추가: 4개까지의 썸네일을 가져올 필드 정의
+    thumbnails = serializers.SerializerMethodField()
+
     class Meta:
         model = Shop
         fields = (
@@ -62,7 +66,20 @@ class TinyShopSerializer(ModelSerializer):
             "avatar",
             "background_pic",
             "is_star_seller",
+            "thumbnails",  # thumbnails 필드 추가
         )
+
+    # 추가: 썸네일 정보 가져오는 메서드 정의
+    def get_thumbnails(self, obj):
+        # 샵에 해당하는 최대 4개의 상품 썸네일을 가져옵니다.
+        products = Product.objects.filter(shop=obj)[:4]
+        thumbnail_list = []
+
+        for product in products:
+            if product.thumbnail:
+                thumbnail_list.append(product.thumbnail)
+
+        return thumbnail_list
 
 
 class ShopSerializer(ModelSerializer):

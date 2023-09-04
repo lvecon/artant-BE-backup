@@ -210,7 +210,7 @@ class RecentlyViewed(APIView):
         user = request.user
         recently_viewed_timestamps = UserProductTimestamp.objects.filter(
             user=user.pk
-        ).order_by("-timestamp")[:5]
+        ).order_by("-timestamp")[:10]
         recently_viewed_products = [
             timestamp.product for timestamp in recently_viewed_timestamps
         ]
