@@ -31,6 +31,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import ProductImage, ProductVideo
 from rest_framework.status import HTTP_200_OK
+from reviews.models import ReviewPhoto
 
 
 # Create your views here.
@@ -503,3 +504,14 @@ class ProductVideos(APIView):
             return Response(serializer.data)
         else:
             return Response(serializer.errors)
+
+
+class ReviewPhotoList(APIView):
+    def get(self, request, product_pk):
+        photos = ReviewPhoto.objects.filter(review__product_id=product_pk)
+        serializer = ReviewPhotoSerializer(
+            photos,
+            many=True,
+        )
+
+        return Response(serializer.data)
