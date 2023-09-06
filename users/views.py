@@ -220,15 +220,34 @@ class ShopProducts(APIView):
             raise NotFound
 
     def get(self, request, pk):
+        try:
+            page = request.query_params.get("page", 1)  # ( ,default value)
+            page = int(page)  # Type change
+        except ValueError:
+            page = 1
+
+        page_size = settings.SHOP_PRODUCT_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = start + page_size
+
         shop = self.get_object(pk)
         products = shop.product.all()
 
+        total_count = products.count()  # Get the total count of products
+
         serializer = ProductListSerializer(
-            products,
+            products[start:end],
             many=True,
             context={"reqeust": request},
         )
-        return Response(serializer.data)
+
+        # Create a dictionary containing 'total_counts' along with serialized data
+        response_data = {
+            "total_count": total_count,
+            "products": serializer.data,
+        }
+
+        return Response(response_data)
 
 
 class ReviewPhotos(APIView):
