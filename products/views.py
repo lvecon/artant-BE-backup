@@ -508,9 +508,19 @@ class ProductVideos(APIView):
 
 class ReviewPhotoList(APIView):
     def get(self, request, product_pk):
+        try:
+            page = request.query_params.get("page", 1)  # ( ,default value)
+            page = int(page)  # Type change
+        except ValueError:
+            page = 1
+
+        page_size = settings.REVIEW_IMAGE_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = start + page_size
+
         photos = ReviewPhoto.objects.filter(review__product_id=product_pk)
         serializer = ReviewPhotoSerializer(
-            photos,
+            photos[start:end],
             many=True,
         )
 
