@@ -57,7 +57,7 @@ class UserFavoritesItems(APIView):
         except ValueError:
             page = 1
 
-        page_size = settings.ARTIST_PAGE_SIZE
+        page_size = settings.FAVORITE_ITEM_PAGE_SIZE
         start = (page - 1) * page_size
         end = page * page_size
 
