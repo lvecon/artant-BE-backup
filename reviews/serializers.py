@@ -14,7 +14,7 @@ class ReviewPhotoSerializer(serializers.ModelSerializer):
 class ReviewReplySerializer(serializers.ModelSerializer):
     shop_pk = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
-    shop_avatar = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
     class Meta:
@@ -23,7 +23,7 @@ class ReviewReplySerializer(serializers.ModelSerializer):
             "pk",
             "shop_pk",
             "shop_name",
-            "shop_avatar",
+            "avatar",
             "content",
             "created_at",
         )
@@ -34,7 +34,7 @@ class ReviewReplySerializer(serializers.ModelSerializer):
     def get_shop_name(self, reply):
         return reply.shop.shop_name
 
-    def get_shop_avatar(self, reply):
+    def get_avatar(self, reply):
         return reply.shop.avatar
 
     def get_created_at(self, review):
