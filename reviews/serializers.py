@@ -46,6 +46,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     images = ReviewPhotoSerializer(many=True, read_only=True)
     reply = serializers.SerializerMethodField()
     product_name = serializers.SerializerMethodField()
+    product_thumbnail = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
     class Meta:
@@ -55,6 +56,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "user",
             "product_name",
             "content",
+            "product_thumbnail",
             "rating",
             "created_at",
             "rating_item_quality",
@@ -66,6 +68,9 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def get_product_name(self, review):
         return review.product.name
+
+    def get_product_thumbnail(self, review):
+        return review.product.thumbnail
 
     def get_created_at(self, review):
         return review.created_at.strftime("%Y-%m-%d")
