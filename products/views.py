@@ -242,7 +242,7 @@ class ProductReviews(APIView):
 
         query_type = self.request.GET.get("sort", None)
 
-        page_size = settings.PAGE_SIZE
+        page_size = settings.REVIEW_PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
         product = self.get_object(pk)
