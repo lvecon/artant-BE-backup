@@ -57,7 +57,7 @@ class CartView(APIView):
             CartLine.objects.filter(
                 cart__user=user,
                 product=product,
-                variant__in=variants,
+                # variant__in=variants,
             )
             .annotate(matched_variants=Count("variant"))
             .filter(matched_variants=len(variants))

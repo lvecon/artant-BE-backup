@@ -1,12 +1,16 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import Cart, CartLine
-from products.serializers import ProductListSerializer, VariantValueSerializer
+from products.serializers import (
+    ProductListSerializer,
+    VariantValueSerializer,
+    ProductDetailSerializer,
+)
 from users.serializers import TinyUserSerializer
 
 
 class CartLineSerializer(ModelSerializer):
-    product = ProductListSerializer()
+    product = ProductDetailSerializer()
     variant = VariantValueSerializer(many=True, read_only=True)
     count_in_carts = serializers.SerializerMethodField()
 

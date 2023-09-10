@@ -64,6 +64,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     category = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
     shop_pk = serializers.SerializerMethodField()
+    shop_avatar = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
     sellers = serializers.SerializerMethodField()
     shipping_date = serializers.SerializerMethodField()
@@ -80,6 +81,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "name",
             "shop_pk",
             "shop_name",
+            "shop_avatar",
             "sellers",
             "original_price",
             "price",
@@ -134,6 +136,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_shop_name(self, product):
         return product.shop.shop_name
+
+    def get_shop_avatar(self, product):
+        return product.shop.avatar
 
     def get_shop_pk(self, product):
         return product.shop.pk
