@@ -62,6 +62,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
+    subCategory = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
     shop_pk = serializers.SerializerMethodField()
     shop_avatar = serializers.SerializerMethodField()
@@ -112,6 +113,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "thumbnail",
             "created_at",
             "category",
+            "subCategory",
             "options",
             "item_width",
             "item_height",
@@ -133,6 +135,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_category(self, product):
         return product.category.get(level=2).name
+
+    def get_subCategory(self, product):
+        return product.category.get(level=3).name
 
     def get_shop_name(self, product):
         return product.shop.shop_name
