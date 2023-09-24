@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from django.conf import settings
 from django.db.models import Count
 from .models import Purchase, PurchaseLine
 from products.models import Product, VariantValue
@@ -14,12 +15,23 @@ class PurchaseView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        user = request.user
-        purchase = Purchase.objects.get(user=user)
+        try:
+            page = request.query_params.get("page", 1)  # ( ,default value)
+            page = int(page)  # Type change
+        except ValueError:
+            page = 1
 
-        serializer = PurchaseSerializer(
-            purchase,
+        page_size = settings.PURCHASE_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = start + page_size
+        user = request.user
+
+        purchaselines = PurchaseLine.objects.filter(purchase__user=user)
+
+        serializer = PurchaseLineSerializer(
+            purchaselines[start:end],
             context={"request": request},
+            many=True,
         )
         return Response(serializer.data)
 
@@ -57,35 +69,17 @@ class PurchaseView(APIView):
         else:
             variants = []
 
-        existing_purchase_line = (
-            PurchaseLine.objects.filter(
-                purchase__user=user,
-                product=product,
-                # variant__in=variants,
-            )
-            .annotate(matched_variants=Count("variant"))
-            .filter(matched_variants=len(variants))
-            .first()
-        )
-
-        if existing_purchase_line:
-            # If an existing purchase line exists, update the quantity
-            existing_purchase_line.quantity += quantity
-            existing_purchase_line.save()
-            serializer = PurchaseLineSerializer(existing_purchase_line)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
             # If no existing purchase line, create a new one
-            purchase_line = PurchaseLine(
-                purchase=Purchase.objects.get(user=user),
-                product=product,
-                quantity=quantity,
-                order_date=order_date,
-            )
-            purchase_line.save()
-            purchase_line.variant.set(variants)
-            serializer = PurchaseLineSerializer(purchase_line)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        purchase_line = PurchaseLine(
+            purchase=Purchase.objects.get(user=user),
+            product=product,
+            quantity=quantity,
+            order_date=order_date,
+        )
+        purchase_line.save()
+        purchase_line.variant.set(variants)
+        serializer = PurchaseLineSerializer(purchase_line)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
         user = request.user
