@@ -3,21 +3,22 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.db.models import Count
-from .models import Cart, CartLine
+from .models import Purchase, PurchaseLine
 from products.models import Product, VariantValue
-from .serializers import CartSerializer, CartLineSerializer
+from .serializers import PurchaseLineSerializer, PurchaseSerializer
+from datetime import datetime
 
 
 # Create your views here.
-class CartView(APIView):
+class PurchaseView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
         user = request.user
-        cart = Cart.objects.get(user=user)
+        purchase = Purchase.objects.get(user=user)
 
-        serializer = CartSerializer(
-            cart,
+        serializer = PurchaseSerializer(
+            purchase,
             context={"request": request},
         )
         return Response(serializer.data)
@@ -27,8 +28,9 @@ class CartView(APIView):
         product_pk = request.data.get("product_pk")
         variant_pks = request.data.get("variant_pks", [])
         quantity = request.data.get("quantity", 1)
+        order_date = datetime.now().strftime("%Y.%m.%d")
 
-        cart, _ = Cart.objects.get_or_create(user=user)
+        purchase, _ = Purchase.objects.get_or_create(user=user)
 
         try:
             product = Product.objects.get(pk=product_pk)
@@ -55,9 +57,9 @@ class CartView(APIView):
         else:
             variants = []
 
-        existing_cart_line = (
-            CartLine.objects.filter(
-                cart__user=user,
+        existing_purchase_line = (
+            PurchaseLine.objects.filter(
+                purchase__user=user,
                 product=product,
                 # variant__in=variants,
             )
@@ -66,43 +68,44 @@ class CartView(APIView):
             .first()
         )
 
-        if existing_cart_line:
-            # If an existing cart line exists, update the quantity
-            existing_cart_line.quantity += quantity
-            existing_cart_line.save()
-            serializer = CartLineSerializer(existing_cart_line)
+        if existing_purchase_line:
+            # If an existing purchase line exists, update the quantity
+            existing_purchase_line.quantity += quantity
+            existing_purchase_line.save()
+            serializer = PurchaseLineSerializer(existing_purchase_line)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            # If no existing cart line, create a new one
-            cart_line = CartLine(
-                cart=Cart.objects.get(user=user),
+            # If no existing purchase line, create a new one
+            purchase_line = PurchaseLine(
+                purchase=Purchase.objects.get(user=user),
                 product=product,
                 quantity=quantity,
+                order_date=order_date,
             )
-            cart_line.save()
-            cart_line.variant.set(variants)
-            serializer = CartLineSerializer(cart_line)
+            purchase_line.save()
+            purchase_line.variant.set(variants)
+            serializer = PurchaseLineSerializer(purchase_line)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
         user = request.user
-        cart = Cart.objects.get(user=user)
-        cart.delete()
+        purchase = Purchase.objects.get(user=user)
+        purchase.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CartLineView(APIView):
+class PurchaseLineView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get(self, request, cartline_pk):
-        cartline = CartLine.objects.get(pk=cartline_pk)
+    def get(self, request, purchaseline_pk):
+        purchaseline = PurchaseLine.objects.get(pk=purchaseline_pk)
 
-        serializer = CartLineSerializer(
-            cartline,
+        serializer = PurchaseLineSerializer(
+            purchaseline,
         )
         return Response(serializer.data)
 
-    def delete(self, request, cartline_pk):
-        cartline = CartLine.objects.get(pk=cartline_pk)
-        cartline.delete()
+    def delete(self, request, purchaseline_pk):
+        purchaseline = PurchaseLine.objects.get(pk=purchaseline_pk)
+        purchaseline.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
