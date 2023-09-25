@@ -26,7 +26,9 @@ class PurchaseView(APIView):
         end = start + page_size
         user = request.user
 
-        purchaselines = PurchaseLine.objects.filter(purchase__user=user)
+        purchaselines = PurchaseLine.objects.filter(purchase__user=user).order_by(
+            "-created_at"
+        )
 
         serializer = PurchaseLineSerializer(
             purchaselines[start:end],
