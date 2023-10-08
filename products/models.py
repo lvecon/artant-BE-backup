@@ -85,6 +85,7 @@ class Product(CommonModel):
         "Category",
         related_name="product",
     )
+
     made_by = models.CharField(
         max_length=140,
         choices=ProductMadeByChoices.choices,
@@ -176,7 +177,7 @@ class ProductTag(models.Model):
     tag = models.CharField(max_length=32)
     product = models.ManyToManyField(
         "Product",
-        related_name="tag",
+        related_name="tags",
     )
 
 

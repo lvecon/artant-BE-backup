@@ -109,7 +109,7 @@ class ShopSerializer(ModelSerializer):
 
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
-
+    image_urls = serializers.SerializerMethodField()
     users = TinyUserSerializer(many=True, read_only=True)
 
     class Meta:
@@ -119,6 +119,8 @@ class ShopDetailSerializer(ModelSerializer):
             "users",
             "shop_name",
             "avatar",
+            "description_title",
+            "description",
             "background_pic",
             "description",
             "announcement",
@@ -127,6 +129,7 @@ class ShopDetailSerializer(ModelSerializer):
             "shop_policy_updated_at",
             "is_liked",
             "is_star_seller",
+            "image_urls",
         )
 
     def get_is_liked(self, shop):
@@ -138,6 +141,13 @@ class ShopDetailSerializer(ModelSerializer):
                     shops__pk=shop.pk,
                 ).exists()
         return False
+
+    def get_image_urls(self, shop):
+        image_fields = ["image_1", "image_2", "image_3", "image_4", "image_5"]
+        image_urls = [
+            getattr(shop, field) for field in image_fields if getattr(shop, field)
+        ]
+        return image_urls
 
 
 class ShopCreateSerializer(serializers.ModelSerializer):

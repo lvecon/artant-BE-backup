@@ -42,6 +42,7 @@ class Products(APIView):
         limit = int(self.request.GET.get("limit", 40))
         offset = int(self.request.GET.get("offset", 0))
         category_type = self.request.GET.get("category", None)
+        tag = self.request.GET.get("tag", None)
 
         price_upper_range = self.request.GET.get("PriceUpper", 10000000)
         price_lower_range = self.request.GET.get("PriceLower", 0)
@@ -54,6 +55,8 @@ class Products(APIView):
             q &= Q(colors__name__in=colors)
         if category_type and category_type != "모든작품":
             q &= Q(category__name=category_type)
+        if tag:
+            q &= Q(tags__tag=tag)
 
         if price_lower_range != 0 or price_upper_range != 10000000:
             q &= Q(price__range=(price_lower_range, price_upper_range))

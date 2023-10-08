@@ -187,6 +187,8 @@ class ProductListSerializer(serializers.ModelSerializer):
     shop_name = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
+
     # colors = ColorSerializer(many=True, read_only=True)
 
     class Meta:
@@ -202,6 +204,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "rating_count",
             "free_shipping",
             "is_discount",
+            "tags",
             # "is_frame_included",
             # "is_artant_choice",
             # "is_artant_star",
@@ -237,6 +240,9 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_shop_name(self, product):
         return product.shop.shop_name
+
+    def get_tags(self, obj):
+        return obj.tags.values_list("tag", flat=True)
 
     def get_discount_rate(self, product):
         if product.original_price & product.price:
