@@ -134,6 +134,8 @@ class Product(CommonModel):
     is_artant_star = models.BooleanField(default=False)
     is_artant_choice = models.BooleanField(default=False)
     is_digital = models.BooleanField(default=False)
+    is_personalization_enabled = models.BooleanField(default=False)
+    is_personalization_optional = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
