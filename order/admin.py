@@ -17,6 +17,6 @@ class OrdrerAdmin(admin.ModelAdmin):
 class OrdrerLineAdmin(admin.ModelAdmin):
     list_display = (
         "order",
-        "variant",
+        # "variant",
         "quantity",
     )

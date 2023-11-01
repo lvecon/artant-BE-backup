@@ -34,7 +34,7 @@ class voucher(models.Model):
     products = models.ManyToManyField(
         "products.Product", blank=True, related_name="voucher"
     )
-    variants = models.ManyToManyField("products.VariantValue", blank=True)
+    # variants = models.ManyToManyField("products.VariantValue", blank=True)
     categories = models.ManyToManyField("products.Category", blank=True)
 
 
@@ -47,7 +47,7 @@ class Sale(models.Model):
     )
     categories = models.ManyToManyField("products.Category", blank=True)
     products = models.ManyToManyField("products.Product", blank=True)
-    variants = models.ManyToManyField("products.VariantValue", blank=True)
+    # variants = models.ManyToManyField("products.VariantValue", blank=True)
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True, blank=True)
     discount_value = models.CharField(

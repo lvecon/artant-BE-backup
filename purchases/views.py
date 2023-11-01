@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from django.conf import settings
 from django.db.models import Count
 from .models import Purchase, PurchaseLine
-from products.models import Product, VariantValue
+from products.models import Product
 from .serializers import PurchaseLineSerializer, PurchaseSerializer
 from datetime import datetime
 
@@ -53,23 +53,23 @@ class PurchaseView(APIView):
                 {"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND
             )
         # check if variant is product's variant
-        if variant_pks:
-            try:
-                variants = VariantValue.objects.filter(
-                    pk__in=variant_pks,
-                    option__product=product,
-                )
-                if len(variant_pks) > len(variants):
-                    return Response(
-                        {"error": "at least one variant is not for this product."},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-            except VariantValue.DoesNotExist:
-                return Response(
-                    {"error": "Variants not found."}, status=status.HTTP_404_NOT_FOUND
-                )
-        else:
-            variants = []
+        # if variant_pks:
+        #     try:
+        #         variants = VariantValue.objects.filter(
+        #             pk__in=variant_pks,
+        #             option__product=product,
+        #         )
+        #         if len(variant_pks) > len(variants):
+        #             return Response(
+        #                 {"error": "at least one variant is not for this product."},
+        #                 status=status.HTTP_404_NOT_FOUND,
+        #             )
+        #     except VariantValue.DoesNotExist:
+        #         return Response(
+        #             {"error": "Variants not found."}, status=status.HTTP_404_NOT_FOUND
+        #         )
+        # else:
+        #     variants = []
 
             # If no existing purchase line, create a new one
         purchase_line = PurchaseLine(
@@ -79,7 +79,7 @@ class PurchaseView(APIView):
             order_date=order_date,
         )
         purchase_line.save()
-        purchase_line.variant.set(variants)
+        # purchase_line.variant.set(variants)
         serializer = PurchaseLineSerializer(purchase_line)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

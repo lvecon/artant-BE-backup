@@ -32,11 +32,11 @@ class PurchaseLine(CommonModel):
         on_delete=models.CASCADE,
     )
 
-    variant = models.ManyToManyField(
-        "products.VariantValue",
-        related_name="+",
-        blank=True,
-    )
+    # variant = models.ManyToManyField(
+    #     "products.VariantValue",
+    #     related_name="+",
+    #     blank=True,
+    # )
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
 
     order_date = models.CharField(
