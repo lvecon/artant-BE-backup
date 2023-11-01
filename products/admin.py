@@ -12,6 +12,8 @@ from products.models import (
     VariantOption,
     VariantValue,
     Color,
+    ProductMaterial,
+    Material,
 )
 
 
@@ -95,3 +97,11 @@ class ProductImageAdmin(admin.ModelAdmin):
 @admin.register(ProductVideo)
 class ProductImageAdmin(admin.ModelAdmin):
     list_display = ("__str__",)
+
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    list_display = ("__str__", )
+
+@admin.register(ProductMaterial)
+class ProductMaterialAdmin(admin.ModelAdmin):
+    list_display = ("__str__", )

@@ -137,6 +137,7 @@ class Product(CommonModel):
     is_personalization_enabled = models.BooleanField(default=False)
     is_personalization_optional = models.BooleanField(default=False)
 
+
     def __str__(self):
         return self.name
 
@@ -239,3 +240,18 @@ class UserProductTimestamp(models.Model):
         "users.User", on_delete=models.CASCADE, related_name="timestamps"
     )
     timestamp = models.DateTimeField("TTime Stamp", blank=True, null=True)
+
+
+
+class Material(models.Model):
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.name}"
+
+class ProductMaterial(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_materials')
+    material = models.ForeignKey(Material, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.product.name} : {self.material.name}"
