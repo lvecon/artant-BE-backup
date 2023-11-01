@@ -106,12 +106,8 @@ class Product(CommonModel):
         choices=ProductItemTypeChoices.choices,
         default="Handmade",
     )
-    colors = models.ManyToManyField(
-        "products.Color",
-        related_name="product",
-        null=True,
-        blank=True,
-    )
+    primary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_color_products')
+    secondary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='secondary_color_products')
     processing_min = models.CharField(max_length=32, default=3)
     processing_max = models.CharField(max_length=32, default=7)
     shipping_price = models.CharField(max_length=32, default=0)
