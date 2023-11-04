@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authtoken.models import Token
+
 from users.models import Shop, User
 from products.models import Product, Category
 from reviews.models import Review
@@ -94,8 +94,7 @@ class LogIn(APIView):
         )
         if user:
             login(request, user)
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({"ok": "Welcome!", "token": token.key})
+            return Response({"ok": "Welcome!"})
         else:
             return Response(
                 {"error": "wrong password"},
