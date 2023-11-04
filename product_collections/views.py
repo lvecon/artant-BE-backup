@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.db.models import Count
 from .models import Collection
-from products.models import Product, VariantValue
+from products.models import Product
 from .serializers import CollectionSerializer
 
 

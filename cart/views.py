@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.db.models import Count
 from .models import Cart, CartLine
-from products.models import Product, VariantValue
+from products.models import Product
 from .serializers import CartSerializer, CartLineSerializer
 
 
@@ -37,23 +37,23 @@ class CartView(APIView):
                 {"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND
             )
         # check if variant is product's variant
-        if variant_pks:
-            try:
-                variants = VariantValue.objects.filter(
-                    pk__in=variant_pks,
-                    option__product=product,
-                )
-                if len(variant_pks) > len(variants):
-                    return Response(
-                        {"error": "at least one variant is not for this product."},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-            except VariantValue.DoesNotExist:
-                return Response(
-                    {"error": "Variants not found."}, status=status.HTTP_404_NOT_FOUND
-                )
-        else:
-            variants = []
+        # if variant_pks:
+        #     try:
+        #         variants = VariantValue.objects.filter(
+        #             pk__in=variant_pks,
+        #             option__product=product,
+        #         )
+        #         if len(variant_pks) > len(variants):
+        #             return Response(
+        #                 {"error": "at least one variant is not for this product."},
+        #                 status=status.HTTP_404_NOT_FOUND,
+        #             )
+        #     except VariantValue.DoesNotExist:
+        #         return Response(
+        #             {"error": "Variants not found."}, status=status.HTTP_404_NOT_FOUND
+        #         )
+        # else:
+        #     variants = []
 
         existing_cart_line = (
             CartLine.objects.filter(
@@ -62,7 +62,7 @@ class CartView(APIView):
                 # variant__in=variants,
             )
             .annotate(matched_variants=Count("variant"))
-            .filter(matched_variants=len(variants))
+            # .filter(matched_variants=len(variants))
             .first()
         )
 
@@ -80,7 +80,7 @@ class CartView(APIView):
                 quantity=quantity,
             )
             cart_line.save()
-            cart_line.variant.set(variants)
+            # cart_line.variant.set(variants)
             serializer = CartLineSerializer(cart_line)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 

@@ -8,8 +8,8 @@ from .models import (
     ProductTag,
     ProductVideo,
     Color,
-    VariantOption,
-    VariantValue,
+    VariationOption,
+    Variation,
 )
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
@@ -40,21 +40,21 @@ class ColorSerializer(serializers.ModelSerializer):
         fields = ("pk", "name")
 
 
-class VariantValueSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = VariantValue
-        fields = (
-            "pk",
-            "value",
-        )
+# class VariantValueSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = V
+#         fields = (
+#             "pk",
+#             "value",
+#         )
 
 
-class VariantOptionSerializer(serializers.ModelSerializer):
-    value = VariantValueSerializer(many=True, read_only=True)
+# class VariantOptionSerializer(serializers.ModelSerializer):
+#     value = VariantValueSerializer(many=True, read_only=True)
 
-    class Meta:
-        model = VariantOption
-        fields = ["name", "value"]
+#     class Meta:
+#         model = VariantOption
+#         fields = ["name", "value"]
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -73,7 +73,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ImageSerializer(many=True, read_only=True)
     colors = ColorSerializer(many=True, read_only=True)
     video = VideoSerializer()
-    options = VariantOptionSerializer(many=True, read_only=True)
+    # options = VariantOptionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -114,7 +114,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "category",
             "subCategory",
-            "options",
+            # "options",
             "item_width",
             "item_height",
             "description",

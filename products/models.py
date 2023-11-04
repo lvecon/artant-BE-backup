@@ -106,12 +106,8 @@ class Product(CommonModel):
         choices=ProductItemTypeChoices.choices,
         default="Handmade",
     )
-    colors = models.ManyToManyField(
-        "products.Color",
-        related_name="product",
-        null=True,
-        blank=True,
-    )
+    primary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_color_products')
+    secondary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='secondary_color_products')
     processing_min = models.CharField(max_length=32, default=3)
     processing_max = models.CharField(max_length=32, default=7)
     shipping_price = models.CharField(max_length=32, default=0)
@@ -134,6 +130,9 @@ class Product(CommonModel):
     is_artant_star = models.BooleanField(default=False)
     is_artant_choice = models.BooleanField(default=False)
     is_digital = models.BooleanField(default=False)
+    is_personalization_enabled = models.BooleanField(default=False)
+    is_personalization_optional = models.BooleanField(default=False)
+
 
     def __str__(self):
         return self.name
@@ -205,28 +204,23 @@ class ProductVideo(CommonModel):
         return f"{self.product}"
 
 
-class VariantOption(models.Model):  # 개인맞춤화, 마감, 사이즈
-    name = models.CharField(max_length=32)
-    product = models.ForeignKey(
-        "Product",
-        related_name="options",
-        on_delete=models.CASCADE,
-    )
+class Variation(models.Model):
+    name = models.CharField(max_length=255)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variations')
+    is_sku_vary = models.BooleanField(default=False) 
+    is_price_vary = models.BooleanField(default=False) 
+    is_quantity_vary = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.name} : {self.product}"
+        return f"{self.name} : {self.product.name}"
 
-
-class VariantValue(models.Model):  # 옵션별 상세 value
-    value = models.CharField(max_length=32)
-    option = models.ForeignKey(
-        "VariantOption",
-        on_delete=models.CASCADE,
-        related_name="value",
-    )
-
-    def __str__(self):
-        return f"{self.value} : {self.option.product}"
+class VariationOption(models.Model):
+    variation_one = models.ForeignKey(Variation, on_delete=models.CASCADE, related_name='options_one')
+    variation_two = models.ForeignKey(Variation, on_delete=models.CASCADE, related_name='options_two')
+    sku = models.CharField(max_length=255, null=True, blank=True)
+    price = models.PositiveIntegerField(null=True, blank=True)
+    quantity = models.PositiveIntegerField(null=True, blank=True)
+    is_visible = models.BooleanField(default=False)
 
 
 class UserProductTimestamp(models.Model):
@@ -237,3 +231,18 @@ class UserProductTimestamp(models.Model):
         "users.User", on_delete=models.CASCADE, related_name="timestamps"
     )
     timestamp = models.DateTimeField("TTime Stamp", blank=True, null=True)
+
+
+
+class Material(models.Model):
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.name}"
+
+class ProductMaterial(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_materials')
+    material = models.ForeignKey(Material, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.product.name} : {self.material.name}"

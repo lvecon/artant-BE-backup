@@ -9,9 +9,11 @@ from products.models import (
     ProductTag,
     ProductVideo,
     UserProductTimestamp,
-    VariantOption,
-    VariantValue,
+    Variation,
+    VariationOption,
     Color,
+    ProductMaterial,
+    Material,
 )
 
 
@@ -52,19 +54,17 @@ class ProductTagAdmin(admin.ModelAdmin):
     list_display = ("tag",)
 
 
-@admin.register(VariantOption)
-class VariantOptionAdmin(admin.ModelAdmin):
+@admin.register(Variation)
+class VariationAdmin(admin.ModelAdmin):
     list_display = (
-        "name",
-        "product",
+        "__str__",
     )
 
 
-@admin.register(VariantValue)
-class VariantValueAdmin(admin.ModelAdmin):
+@admin.register(VariationOption)
+class VariationOptionAdmin(admin.ModelAdmin):
     list_display = (
-        "option",
-        "value",
+       "__str__",
     )
 
 
@@ -95,3 +95,11 @@ class ProductImageAdmin(admin.ModelAdmin):
 @admin.register(ProductVideo)
 class ProductImageAdmin(admin.ModelAdmin):
     list_display = ("__str__",)
+
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    list_display = ("__str__", )
+
+@admin.register(ProductMaterial)
+class ProductMaterialAdmin(admin.ModelAdmin):
+    list_display = ("__str__", )

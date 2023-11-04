@@ -46,11 +46,11 @@ class OrderLine(CommonModel):
         editable=False,
         on_delete=models.CASCADE,
     )
-    variant = models.ForeignKey(
-        "products.VariantValue",
-        related_name="order_lines",
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-    )
+    # variant = models.ForeignKey(
+    #     # "products.VariantValue",
+    #     related_name="order_lines",
+    #     on_delete=models.SET_NULL,
+    #     blank=True,
+    #     null=True,
+    # )
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
