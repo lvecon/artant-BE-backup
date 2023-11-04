@@ -10,6 +10,7 @@ from .models import (
     Color,
     VariationOption,
     Variation,
+    ProductVariant,
 )
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
@@ -55,6 +56,24 @@ class ColorSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = VariantOption
 #         fields = ["name", "value"]
+
+class VariationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Variation
+        fields = '__all__' 
+
+class VariationOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VariationOption
+        fields = '__all__'
+
+class ProductVariantSerializer(serializers.ModelSerializer):
+    option_one = VariationOptionSerializer(read_only=True)
+    option_two = VariationOptionSerializer(read_only=True)
+
+    class Meta:
+        model = ProductVariant
+        fields = '__all__'
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -296,3 +315,126 @@ class VideoSerializer(ModelSerializer):
             "pk",
             "video",
         )
+
+
+class EditProductSerializer(serializers.ModelSerializer):
+    rating = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    is_star_seller = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
+    subCategory = serializers.SerializerMethodField()
+    shop_name = serializers.SerializerMethodField()
+    shop_pk = serializers.SerializerMethodField()
+    shop_avatar = serializers.SerializerMethodField()
+    discount_rate = serializers.SerializerMethodField()
+    sellers = serializers.SerializerMethodField()
+    shipping_date = serializers.SerializerMethodField()
+    cart_count = serializers.SerializerMethodField()
+    images = ImageSerializer(many=True, read_only=True)
+    colors = ColorSerializer(many=True, read_only=True)
+    video = VideoSerializer()
+    # options = VariantOptionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Product
+        fields = (
+            "pk",
+            "name",
+            "shop_pk",
+            "shop_name",
+            "shop_avatar",
+            "sellers",
+            "original_price",
+            "price",
+            "discount_rate",
+            "rating",
+            "rating_count",
+            "cart_count",
+            "stock",
+            "shipping_price",
+            "free_shipping",
+            "processing_min",
+            "processing_max",
+            "shipping_date",
+            "is_return_exchange_available",
+            "is_frame_included",
+            "is_artant_choice",
+            "is_artant_star",
+            "colors",
+            "product_item_type",
+            "is_giftcard_available",
+            "is_gift_wrapping_available",
+            "is_customizable",
+            "images",
+            "video",
+            "is_best_seller",
+            "is_star_seller",
+            "is_liked",
+            "thumbnail",
+            "created_at",
+            "category",
+            "subCategory",
+            # "options",
+            "item_width",
+            "item_height",
+            "description",
+        )
+
+    def get_rating(self, product):
+        return product.rating()
+
+    def get_is_liked(self, product):
+        request = self.context.get("request")
+        if request:
+            if request.user.is_authenticated:
+                return FavoriteItem.objects.filter(
+                    user=request.user,
+                    products__pk=product.pk,
+                ).exists()
+        return False
+
+    def get_category(self, product):
+        return product.category.get(level=2).name
+
+    def get_subCategory(self, product):
+        return product.category.get(level=3).name
+
+    def get_shop_name(self, product):
+        return product.shop.shop_name
+
+    def get_shop_avatar(self, product):
+        return product.shop.avatar
+
+    def get_shop_pk(self, product):
+        return product.shop.pk
+
+    def get_sellers(self, product):
+        users = product.shop.users.all()
+        serializer = TinyUserSerializer(users, many=True)
+        return serializer.data
+
+    def get_is_star_seller(self, product):
+        return product.shop.is_star_seller
+
+    def get_discount_rate(self, product):
+        if product.original_price & product.price:
+            return int((1 - product.price / product.original_price) * 100)
+        else:
+            return 0
+
+    def get_shipping_date(self, product):
+        today = datetime.now().date()  # 현재 날짜
+        processing_min = int(product.processing_min)  # 최소 처리 기간
+        processing_max = int(product.processing_max)  # 최대 처리 기간
+
+        min_shipping_date = today + timedelta(days=processing_min)
+        max_shipping_date = today + timedelta(days=processing_max)
+
+        return f"{min_shipping_date.month}월 {min_shipping_date.day}일 ~ {max_shipping_date.month}월 {max_shipping_date.day}일"
+
+    def get_cart_count(self, product):
+        count_in_carts = CartLine.objects.filter(
+            product=product,
+        ).count()
+
+        return count_in_carts

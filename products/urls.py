@@ -18,4 +18,5 @@ urlpatterns = [
     path("photos/<int:pk>", views.PhotoDetail.as_view()),
     path("photos/get-url", views.GetUploadURL.as_view()),
     path("videos/get-url", views.GetVideoUploadURL.as_view()),
+    path("edit-product/<int:product_pk>", views.EditProduct.as_view()),
 ]
