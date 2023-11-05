@@ -109,6 +109,8 @@ class Product(CommonModel):
     )
     primary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_color_products')
     secondary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='secondary_color_products')
+    materials = models.ManyToManyField('Material', blank=True)
+
     processing_min = models.CharField(max_length=32, default=3)
     processing_max = models.CharField(max_length=32, default=7)
     shipping_price = models.CharField(max_length=32, default=0)
@@ -131,6 +133,7 @@ class Product(CommonModel):
     is_artant_star = models.BooleanField(default=False)
     is_artant_choice = models.BooleanField(default=False)
     is_digital = models.BooleanField(default=False)
+
     is_personalization_enabled = models.BooleanField(default=False)
     is_personalization_optional = models.BooleanField(default=False)
     personalization_guide = models.CharField(max_length=32, null=True, blank=True)
@@ -253,10 +256,3 @@ class Material(models.Model):
 
     def __str__(self):
         return f"{self.name}"
-
-class ProductMaterial(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_materials')
-    material = models.ForeignKey(Material, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.product.name} : {self.material.name}"

@@ -13,7 +13,6 @@ from products.models import (
     VariationOption,
     ProductVariant,
     Color,
-    ProductMaterial,
     Material,
 )
 
@@ -109,6 +108,3 @@ class ProductImageAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ("__str__", )
 
-@admin.register(ProductMaterial)
-class ProductMaterialAdmin(admin.ModelAdmin):
-    list_display = ("__str__", )
