@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from users.models import Shop, User
-from products.models import Product, Category, Color, Material
+from products.models import Product, Category, Color, Material, Variation, VariationOption, ProductVariant
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
@@ -340,6 +340,55 @@ class CreateProduct(APIView):
 
         if serializer.is_valid():
             product = serializer.save()  # 상품을 저장합니다.
+
+            # Variation 처리
+            variation_instances = {}
+            variations_data = request.data.get('variations', [])
+            for variation_data in variations_data:
+                variation = Variation.objects.create(
+                    name=variation_data['name'],
+                    product=product,
+                    is_sku_vary=variation_data['is_sku_vary'],
+                    is_price_vary=variation_data.get('is_price_vary', False),
+                    is_quantity_vary=variation_data.get('is_quantity_vary', False)
+                )
+                variation_instances[variation.name] = variation
+                
+                for option_data in variation_data.get('options', []):
+                    VariationOption.objects.create(
+                        name=option_data['name'],
+                        variation=variation
+                    )
+
+             # ProductVariant 처리
+            variants_data = request.data.get('variants', [])
+            for variant_data in variants_data:
+                option_one = None
+                option_two = None
+
+                # option_one 찾기
+                if variant_data.get('option_one'):
+                    option_one = VariationOption.objects.filter(
+                        name=variant_data.get('option_one'),
+                        variation__in=variation_instances.values()
+                    ).first()
+
+                # option_two 찾기
+                if variant_data.get('option_two'):
+                    option_two = VariationOption.objects.filter(
+                        name=variant_data.get('option_two'),
+                        variation__in=variation_instances.values()
+                    ).first()
+
+                ProductVariant.objects.create(
+                    product=product,
+                    option_one=option_one,
+                    option_two=option_two,
+                    sku=variant_data.get('sku', ''),
+                    price=variant_data.get('price', 0),
+                    quantity=variant_data.get('quantity', 0),
+                    is_visible=variant_data.get('is_visible', True)
+                )
 
             materials_data = request.data.get('materials', [])  # 재료 이름 목록을 받음
             for material_name in materials_data:
