@@ -92,6 +92,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ImageSerializer(many=True, read_only=True)
     colors = ColorSerializer(many=True, read_only=True)
     video = VideoSerializer()
+    primary_color = serializers.SerializerMethodField()
+    secondary_color = serializers.SerializerMethodField()
     # options = VariantOptionSerializer(many=True, read_only=True)
 
     class Meta:
@@ -109,7 +111,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "rating",
             "rating_count",
             "cart_count",
-            "stock",
+            "quantity",
             "shipping_price",
             "free_shipping",
             "processing_min",
@@ -136,6 +138,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             # "options",
             "item_width",
             "item_height",
+            "primary_color",
+            "secondary_color",
             "description",
         )
 
@@ -197,6 +201,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         ).count()
 
         return count_in_carts
+    
+    def get_primary_color(self, obj):
+        return obj.primary_color.name if obj.primary_color else None
+
+    def get_secondary_color(self, obj):
+        return obj.secondary_color.name if obj.secondary_color else None
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -294,9 +304,43 @@ class TinyProductSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
+    primary_color = serializers.SerializerMethodField()
+    secondary_color = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
-        fields = "__all__"
+        fields = [
+            'id',
+            'shop',
+            'name',
+            'made_by',
+            'product_type',
+            'product_creation_date',
+            'category',
+            'primary_color',
+            'secondary_color',
+            'description',
+            'price',
+            'quantity',
+            'sku',
+            'processing_min',
+            'processing_max',
+            'shipping_price',
+            'thumbnail',
+            'is_personalization_enabled',
+            'is_personalization_optional',
+            'personalization_guide',
+        ]
+
+    def get_primary_color(self, obj):
+        return obj.primary_color.name if obj.primary_color else None
+
+    def get_secondary_color(self, obj):
+        return obj.secondary_color.name if obj.secondary_color else None
+
+    def get_category(self, obj):
+        return [category.name for category in obj.category.all()]
 
 
 class PhotoSerializer(ModelSerializer):
@@ -318,9 +362,6 @@ class VideoSerializer(ModelSerializer):
 
 
 class EditProductSerializer(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField()
-    is_liked = serializers.SerializerMethodField()
-    is_star_seller = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
     subCategory = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
@@ -329,7 +370,7 @@ class EditProductSerializer(serializers.ModelSerializer):
     discount_rate = serializers.SerializerMethodField()
     sellers = serializers.SerializerMethodField()
     shipping_date = serializers.SerializerMethodField()
-    cart_count = serializers.SerializerMethodField()
+
     images = ImageSerializer(many=True, read_only=True)
     colors = ColorSerializer(many=True, read_only=True)
     video = VideoSerializer()
@@ -341,16 +382,10 @@ class EditProductSerializer(serializers.ModelSerializer):
             "pk",
             "name",
             "shop_pk",
-            "shop_name",
-            "shop_avatar",
-            "sellers",
             "original_price",
             "price",
             "discount_rate",
-            "rating",
-            "rating_count",
-            "cart_count",
-            "stock",
+            "quantity",
             "shipping_price",
             "free_shipping",
             "processing_min",
@@ -358,8 +393,6 @@ class EditProductSerializer(serializers.ModelSerializer):
             "shipping_date",
             "is_return_exchange_available",
             "is_frame_included",
-            "is_artant_choice",
-            "is_artant_star",
             "colors",
             "product_item_type",
             "is_giftcard_available",
@@ -367,16 +400,11 @@ class EditProductSerializer(serializers.ModelSerializer):
             "is_customizable",
             "images",
             "video",
-            "is_best_seller",
-            "is_star_seller",
-            "is_liked",
             "thumbnail",
             "created_at",
             "category",
             "subCategory",
             # "options",
-            "item_width",
-            "item_height",
             "description",
         )
 
@@ -399,19 +427,10 @@ class EditProductSerializer(serializers.ModelSerializer):
     def get_subCategory(self, product):
         return product.category.get(level=3).name
 
-    def get_shop_name(self, product):
-        return product.shop.shop_name
-
-    def get_shop_avatar(self, product):
-        return product.shop.avatar
 
     def get_shop_pk(self, product):
         return product.shop.pk
 
-    def get_sellers(self, product):
-        users = product.shop.users.all()
-        serializer = TinyUserSerializer(users, many=True)
-        return serializer.data
 
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller

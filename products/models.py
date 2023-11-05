@@ -80,7 +80,8 @@ class Product(CommonModel):
         on_delete=models.CASCADE,
         related_name="product",
     )
-    stock = models.PositiveIntegerField(null=True, blank=True, default=12)
+    quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
+    sku = models.CharField(max_length=140, null=True, blank=True)
     category = models.ManyToManyField(
         "Category",
         related_name="product",
@@ -132,6 +133,7 @@ class Product(CommonModel):
     is_digital = models.BooleanField(default=False)
     is_personalization_enabled = models.BooleanField(default=False)
     is_personalization_optional = models.BooleanField(default=False)
+    personalization_guide = models.CharField(max_length=32, null=True, blank=True)
 
 
     def __str__(self):
