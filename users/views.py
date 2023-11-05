@@ -341,10 +341,10 @@ class CreateProduct(APIView):
         if serializer.is_valid():
             product = serializer.save()  # 상품을 저장합니다.
 
-            materials_data = request.data.get('materials')  # 예를 들어 'materials' 필드에서 데이터를 가져옴
+            materials_data = request.data.get('materials', [])  # 재료 이름 목록을 받음
             for material_name in materials_data:
                 material, created = Material.objects.get_or_create(name=material_name)
-                ProductMaterial.objects.create(product=product, material=material)
+                product.materials.add(material)
 
             product.category.add(category.id)
             if primary_color:

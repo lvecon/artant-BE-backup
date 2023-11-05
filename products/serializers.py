@@ -94,6 +94,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     video = VideoSerializer()
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
+    materials = serializers.SerializerMethodField()
     # options = VariantOptionSerializer(many=True, read_only=True)
 
     class Meta:
@@ -140,6 +141,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "item_height",
             "primary_color",
             "secondary_color",
+            'materials',
             "description",
         )
 
@@ -207,6 +209,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_secondary_color(self, obj):
         return obj.secondary_color.name if obj.secondary_color else None
+    
+    def get_materials(self, obj):
+        return [material.name for material in obj.materials.all()]
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -281,6 +286,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
+    
 
 
 class TinyProductSerializer(serializers.ModelSerializer):
@@ -307,6 +313,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
+    materials = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -320,6 +327,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'category',
             'primary_color',
             'secondary_color',
+            'materials',
             'description',
             'price',
             'quantity',
@@ -341,6 +349,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     def get_category(self, obj):
         return [category.name for category in obj.category.all()]
+    
+    def get_materials(self, obj):
+        return [material.name for material in obj.materials.all()]
 
 
 class PhotoSerializer(ModelSerializer):
