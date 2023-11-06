@@ -70,7 +70,7 @@ class VariationOptionAdmin(admin.ModelAdmin):
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
     list_display = (
-       "__str__",
+       "id", "__str__",
     )
 
     
@@ -79,6 +79,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "__str__",
         "price",
         "shop",

@@ -138,6 +138,8 @@ class Product(CommonModel):
     is_personalization_optional = models.BooleanField(default=False)
     personalization_guide = models.CharField(max_length=32, null=True, blank=True)
 
+    is_active = models.BooleanField(default=True)
+
 
     def __str__(self):
         return self.name

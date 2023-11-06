@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.db.models import Count
 from .models import Cart, CartLine
-from products.models import Product
+from products.models import Product, ProductVariant
 from .serializers import CartSerializer, CartLineSerializer
 
 
@@ -25,65 +25,40 @@ class CartView(APIView):
     def post(self, request):
         user = request.user
         product_pk = request.data.get("product_pk")
-        variant_pks = request.data.get("variant_pks", [])
-        quantity = request.data.get("quantity", 1)
+        variant_pk = request.data.get("variant_pk", None)
+        quantity = int(request.data.get("quantity", 1))
 
-        cart, _ = Cart.objects.get_or_create(user=user)
+        if quantity < 1:
+            return Response({"error": "Quantity must be at least 1."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            product = Product.objects.get(pk=product_pk)
+            product = Product.objects.get(pk=product_pk, is_active=True)
         except Product.DoesNotExist:
-            return Response(
-                {"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-        # check if variant is product's variant
-        # if variant_pks:
-        #     try:
-        #         variants = VariantValue.objects.filter(
-        #             pk__in=variant_pks,
-        #             option__product=product,
-        #         )
-        #         if len(variant_pks) > len(variants):
-        #             return Response(
-        #                 {"error": "at least one variant is not for this product."},
-        #                 status=status.HTTP_404_NOT_FOUND,
-        #             )
-        #     except VariantValue.DoesNotExist:
-        #         return Response(
-        #             {"error": "Variants not found."}, status=status.HTTP_404_NOT_FOUND
-        #         )
-        # else:
-        #     variants = []
+            return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        existing_cart_line = (
-            CartLine.objects.filter(
-                cart__user=user,
-                product=product,
-                # variant__in=variants,
-            )
-            .annotate(matched_variants=Count("variant"))
-            # .filter(matched_variants=len(variants))
-            .first()
-        )
+        cart, created = Cart.objects.get_or_create(user=user)
+
+        if variant_pk:
+            try:
+                variant = ProductVariant.objects.get(pk=variant_pk, product=product)
+                cart_line_query = CartLine.objects.filter(cart=cart, product_variant=variant)
+            except ProductVariant.DoesNotExist:
+                return Response({"error": "Invalid variant for this product."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            variant = None
+            cart_line_query = CartLine.objects.filter(cart=cart, product=product, product_variant__isnull=True)
+
+        existing_cart_line = cart_line_query.first()
 
         if existing_cart_line:
-            # If an existing cart line exists, update the quantity
             existing_cart_line.quantity += quantity
-            existing_cart_line.save()
-            serializer = CartLineSerializer(existing_cart_line)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            existing_cart_line.save(update_fields=['quantity'])
         else:
-            # If no existing cart line, create a new one
-            cart_line = CartLine(
-                cart=Cart.objects.get(user=user),
-                product=product,
-                quantity=quantity,
-            )
-            cart_line.save()
-            # cart_line.variant.set(variants)
-            serializer = CartLineSerializer(cart_line)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            CartLine.objects.create(cart=cart, product=product, product_variant=variant, quantity=quantity)
 
+        serializer = CartLineSerializer(existing_cart_line or CartLine.objects.filter(cart=cart, product=product, product_variant=variant).first())
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+    
     def delete(self, request):
         user = request.user
         cart = Cart.objects.get(user=user)

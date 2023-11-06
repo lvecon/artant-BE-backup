@@ -79,13 +79,14 @@ class VariationOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = VariationOption
         fields = (
-            "name",
             "variation",
+            "name",
         )
 
 class ProductVariantSerializer(serializers.ModelSerializer):
     option_one = VariationOptionSerializer(read_only=True)
     option_two = VariationOptionSerializer(read_only=True)
+ 
 
     class Meta:
         model = ProductVariant
@@ -98,6 +99,24 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             "is_visible",
         )
 
+class ProductSnapshotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ('pk', 'name', 'thumbnail', "price",)
+
+class TinyProductVariantSerializer(serializers.ModelSerializer):
+    option_one = VariationOptionSerializer(read_only=True)
+    option_two = VariationOptionSerializer(read_only=True)
+
+    class Meta:
+        model = ProductVariant
+        fields = (
+            "pk",
+            "price",
+            "option_one",
+            "option_two",
+        )
+    
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
