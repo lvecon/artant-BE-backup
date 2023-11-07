@@ -6,9 +6,10 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from users.models import Shop, User
-from products.models import Product, Category
+from products.models import Product, Category, Color, Material, Variation, VariationOption, ProductVariant
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
@@ -106,7 +107,6 @@ class LogOut(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        sleep(5)
         logout(request)
         return Response({"ok": "bye!"})
 
@@ -303,6 +303,7 @@ class ReviewPhotos(APIView):
 
 
 class CreateProduct(APIView):
+
     def post(self, request, shop_pk):
         user = request.user
         try:
@@ -312,25 +313,98 @@ class CreateProduct(APIView):
             return Response(
                 {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
             )
+
         category_name = request.data.get("category_name")
+        # 카테고리 이름으로 카테고리 객체를 가져옴, 없으면 404 응답
+        category = get_object_or_404(Category, name=category_name)
 
-        # 카테고리 이름으로 카테고리 객체를 가져옴
-        category = Category.objects.get(name=category_name)
+        # 요청 데이터에서 primary_color와 secondary_color 값을 가져옵니다.
+        primary_color_name = request.data.get('primary_color')
+        secondary_color_name = request.data.get('secondary_color')
 
-        # 부모 카테고리 이름으로 부모 카테고리 객체를 가져옴
-        parent_category = category.parent
+        # 색상 객체들을 검색합니다. 색상이 없으면 None을 반환합니다.
+        primary_color = Color.objects.filter(name=primary_color_name).first()
+        secondary_color = Color.objects.filter(name=secondary_color_name).first()
 
-        data = request.data.copy()  # 요청 데이터를 복사해서 사용
-        data["shop"] = shop_pk
-        data["category"] = [
-            category.id,
-            parent_category.id,
-        ]  # 카테고리와 부모 카테고리의 ID를 리스트로 넘김
+        if primary_color_name and not primary_color:
+            return Response({'primary_color': 'Invalid primary color'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if secondary_color_name and not secondary_color:
+            return Response({'secondary_color': 'Invalid secondary color'}, status=status.HTTP_400_BAD_REQUEST)
+
+        data = request.data.copy()
+        data['shop'] = shop_pk
+
 
         serializer = ProductCreateSerializer(data=data)
 
         if serializer.is_valid():
-            serializer.save()  # 상품을 저장합니다.
+            product = serializer.save()  # 상품을 저장합니다.
+
+            # Variation 처리
+            variation_instances = {}
+            variations_data = request.data.get('variations', [])
+            for variation_data in variations_data:
+                variation = Variation.objects.create(
+                    name=variation_data['name'],
+                    product=product,
+                    is_sku_vary=variation_data['is_sku_vary'],
+                    is_price_vary=variation_data.get('is_price_vary', False),
+                    is_quantity_vary=variation_data.get('is_quantity_vary', False)
+                )
+                variation_instances[variation.name] = variation
+                
+                for option_data in variation_data.get('options', []):
+                    VariationOption.objects.create(
+                        name=option_data['name'],
+                        variation=variation
+                    )
+
+             # ProductVariant 처리
+            variants_data = request.data.get('variants', [])
+            for variant_data in variants_data:
+                option_one = None
+                option_two = None
+
+                # option_one 찾기
+                if variant_data.get('option_one'):
+                    option_one = VariationOption.objects.filter(
+                        name=variant_data.get('option_one'),
+                        variation__in=variation_instances.values()
+                    ).first()
+
+                # option_two 찾기
+                if variant_data.get('option_two'):
+                    option_two = VariationOption.objects.filter(
+                        name=variant_data.get('option_two'),
+                        variation__in=variation_instances.values()
+                    ).first()
+
+                ProductVariant.objects.create(
+                    product=product,
+                    option_one=option_one,
+                    option_two=option_two,
+                    sku=variant_data.get('sku', ''),
+                    price=variant_data.get('price', 0),
+                    quantity=variant_data.get('quantity', 0),
+                    is_visible=variant_data.get('is_visible', True)
+                )
+
+            materials_data = request.data.get('materials', [])  # 재료 이름 목록을 받음
+            for material_name in materials_data:
+                material, created = Material.objects.get_or_create(name=material_name)
+                product.materials.add(material)
+
+            product.category.add(category.id)
+            if primary_color:
+                product.primary_color = primary_color
+            if secondary_color:
+                product.secondary_color = secondary_color
+            product.save()
+
+            if category.parent:
+                product.category.add(category.parent.id)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

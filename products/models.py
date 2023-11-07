@@ -80,7 +80,8 @@ class Product(CommonModel):
         on_delete=models.CASCADE,
         related_name="product",
     )
-    stock = models.PositiveIntegerField(null=True, blank=True, default=12)
+    quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
+    sku = models.CharField(max_length=140, null=True, blank=True)
     category = models.ManyToManyField(
         "Category",
         related_name="product",
@@ -108,6 +109,8 @@ class Product(CommonModel):
     )
     primary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_color_products')
     secondary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='secondary_color_products')
+    materials = models.ManyToManyField('Material', blank=True)
+
     processing_min = models.CharField(max_length=32, default=3)
     processing_max = models.CharField(max_length=32, default=7)
     shipping_price = models.CharField(max_length=32, default=0)
@@ -130,8 +133,12 @@ class Product(CommonModel):
     is_artant_star = models.BooleanField(default=False)
     is_artant_choice = models.BooleanField(default=False)
     is_digital = models.BooleanField(default=False)
+
     is_personalization_enabled = models.BooleanField(default=False)
     is_personalization_optional = models.BooleanField(default=False)
+    personalization_guide = models.CharField(max_length=32, null=True, blank=True)
+
+    is_active = models.BooleanField(default=True)
 
 
     def __str__(self):
@@ -215,13 +222,25 @@ class Variation(models.Model):
         return f"{self.name} : {self.product.name}"
 
 class VariationOption(models.Model):
-    variation_one = models.ForeignKey(Variation, on_delete=models.CASCADE, related_name='options_one')
-    variation_two = models.ForeignKey(Variation, on_delete=models.CASCADE, related_name='options_two')
+    name = models.CharField(max_length=255, null=True)
+    variation = models.ForeignKey(Variation, on_delete=models.CASCADE, null=True, related_name='options')
+
+    def __str__(self):
+        return f"{self.variation.name} - {self.name} : {self.variation.product.name}"
+
+class ProductVariant(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
+    option_one = models.ForeignKey(VariationOption, on_delete=models.CASCADE, related_name='variants_as_option_one', null=True, blank=True)
+    option_two = models.ForeignKey(VariationOption, on_delete=models.CASCADE, related_name='variants_as_option_two', null=True, blank=True)
     sku = models.CharField(max_length=255, null=True, blank=True)
     price = models.PositiveIntegerField(null=True, blank=True)
     quantity = models.PositiveIntegerField(null=True, blank=True)
-    is_visible = models.BooleanField(default=False)
+    is_visible = models.BooleanField(default=True)
 
+    def __str__(self):
+        options = filter(None, [self.option_one, self.option_two])
+        option_descriptions = " x ".join(option.name for option in options)
+        return f"{self.product.name} - {option_descriptions}"
 
 class UserProductTimestamp(models.Model):
     product = models.ForeignKey(
@@ -239,10 +258,3 @@ class Material(models.Model):
 
     def __str__(self):
         return f"{self.name}"
-
-class ProductMaterial(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_materials')
-    material = models.ForeignKey(Material, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.product.name} : {self.material.name}"

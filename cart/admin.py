@@ -5,12 +5,14 @@ from cart.models import Cart, CartLine
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-    list_display = ("user", "__iter__")
+      list_display = (
+        "__str__",
+    )
+
 
 
 @admin.register(CartLine)
 class CartLineAdmin(admin.ModelAdmin):
     list_display = (
-        "cart",
-        "product",
+        "__str__",
     )

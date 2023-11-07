@@ -11,8 +11,8 @@ from products.models import (
     UserProductTimestamp,
     Variation,
     VariationOption,
+    ProductVariant,
     Color,
-    ProductMaterial,
     Material,
 )
 
@@ -67,10 +67,19 @@ class VariationOptionAdmin(admin.ModelAdmin):
        "__str__",
     )
 
+@admin.register(ProductVariant)
+class ProductVariantAdmin(admin.ModelAdmin):
+    list_display = (
+       "id", "__str__",
+    )
+
+    
+
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "__str__",
         "price",
         "shop",
@@ -100,6 +109,3 @@ class ProductImageAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ("__str__", )
 
-@admin.register(ProductMaterial)
-class ProductMaterialAdmin(admin.ModelAdmin):
-    list_display = ("__str__", )

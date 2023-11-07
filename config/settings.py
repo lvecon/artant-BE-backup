@@ -69,6 +69,7 @@ SYSTEM_APPS = [
 
 INSTALLED_APPS = THIRD_PARTY_APPS + CUSTOM_APPS + SYSTEM_APPS
 
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -90,7 +91,11 @@ CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:3000", "http://147.46.245.226:8001"]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:3000", "http://147.46.245.226:8001"]
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:3000",
+    "http://147.46.245.226:8001",
+    "chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld",
+]
 
 
 ROOT_URLCONF = "config.urls"

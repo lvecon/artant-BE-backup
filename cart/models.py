@@ -15,29 +15,28 @@ class Cart(CommonModel):
     def __str__(self):
         return f"{self.user}'s cart"
 
-    def __iter__(self):
-        return [str(cart_line) for cart_line in self.cartline.all()]
-
 
 class CartLine(CommonModel):
     cart = models.ForeignKey(
         Cart,
-        related_name="cartline",
+        related_name="cartlines",
         on_delete=models.CASCADE,
     )
-
     product = models.ForeignKey(
         "products.Product",
-        related_name="cartline",
         on_delete=models.CASCADE,
+        related_name="cartlines",
     )
-
-    # variant = models.ManyToManyField(
-    #     "products.VariantValue",
-    #     related_name="+",
-    #     blank=True,
-    # )
-    quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    product_variant = models.ForeignKey(
+        "products.ProductVariant",
+        on_delete=models.CASCADE,
+        related_name="cartlines",
+        null=True,
+        blank=True,
+    )
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
+    personalization = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.product.name} in {self.cart.user.name}"
+        return f"{self.product_variant} : {self.quantity} in {self.cart.user}'s cart"
+
