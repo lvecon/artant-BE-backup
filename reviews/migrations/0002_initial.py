@@ -11,41 +11,48 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("users", "0001_initial"),
-        ("products", "0001_initial"),
-        ("favorites", "0001_initial"),
+        ("reviews", "0001_initial"),
+        ("products", "0002_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="favoriteshop",
-            name="shops",
-            field=models.ManyToManyField(
-                related_name="favorites_shop", to="users.shop"
+            model_name="reviewreply",
+            name="shop",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="reply",
+                to="users.shop",
             ),
         ),
         migrations.AddField(
-            model_name="favoriteshop",
+            model_name="reviewphoto",
+            name="review",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="images",
+                to="reviews.review",
+            ),
+        ),
+        migrations.AddField(
+            model_name="review",
+            name="product",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="reviews",
+                to="products.product",
+            ),
+        ),
+        migrations.AddField(
+            model_name="review",
             name="user",
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
-                related_name="favorites_shops",
-                to=settings.AUTH_USER_MODEL,
-            ),
-        ),
-        migrations.AddField(
-            model_name="favoriteitem",
-            name="products",
-            field=models.ManyToManyField(
-                related_name="favorites_item", to="products.product"
-            ),
-        ),
-        migrations.AddField(
-            model_name="favoriteitem",
-            name="user",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="favorites_items",
+                related_name="reviews",
                 to=settings.AUTH_USER_MODEL,
             ),
         ),
