@@ -82,27 +82,27 @@ MIDDLEWARE = [
 ]
 
 CORS_ORIGIN_WHITELIST = [
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-    "http://147.46.245.226:8001",
-    "http://artant.shop",
-    "http://www.artant.shop",
+    "https://127.0.0.1:3000",
+    "https://localhost:3000",
+    "https://147.46.245.226:8001",
+    "https://artant.shop",
+    "https://www.artant.shop",
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:3000",
-    "http://147.46.245.226:8001",
-    "http://artant.shop",
-    "http://www.artant.shop",
+    "https://127.0.0.1:3000",
+    "https://147.46.245.226:8001",
+    "https://artant.shop",
+    "https://www.artant.shop",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:3000",
-    "http://147.46.245.226:8001",
-    "http://artant.shop",
-    "http://www.artant.shop",
+    "https://127.0.0.1:3000",
+    "https://147.46.245.226:8001",
+    "https://artant.shop",
+    "https://www.artant.shop",
     "chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld",
 ]
 
