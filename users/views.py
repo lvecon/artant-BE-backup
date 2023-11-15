@@ -9,7 +9,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from users.models import Shop, User
-from products.models import Product, Category, Color, Material, Variation, VariationOption, ProductVariant
+from products.models import (
+    Product,
+    Category,
+    Color,
+    Material,
+    Variation,
+    VariationOption,
+    ProductVariant,
+)
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
@@ -303,7 +311,6 @@ class ReviewPhotos(APIView):
 
 
 class CreateProduct(APIView):
-
     def post(self, request, shop_pk):
         user = request.user
         try:
@@ -319,22 +326,27 @@ class CreateProduct(APIView):
         category = get_object_or_404(Category, name=category_name)
 
         # 요청 데이터에서 primary_color와 secondary_color 값을 가져옵니다.
-        primary_color_name = request.data.get('primary_color')
-        secondary_color_name = request.data.get('secondary_color')
+        primary_color_name = request.data.get("primary_color")
+        secondary_color_name = request.data.get("secondary_color")
 
         # 색상 객체들을 검색합니다. 색상이 없으면 None을 반환합니다.
         primary_color = Color.objects.filter(name=primary_color_name).first()
         secondary_color = Color.objects.filter(name=secondary_color_name).first()
 
         if primary_color_name and not primary_color:
-            return Response({'primary_color': 'Invalid primary color'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"primary_color": "Invalid primary color"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if secondary_color_name and not secondary_color:
-            return Response({'secondary_color': 'Invalid secondary color'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"secondary_color": "Invalid secondary color"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         data = request.data.copy()
-        data['shop'] = shop_pk
-
+        data["shop"] = shop_pk
 
         serializer = ProductCreateSerializer(data=data)
 
@@ -343,54 +355,53 @@ class CreateProduct(APIView):
 
             # Variation 처리
             variation_instances = {}
-            variations_data = request.data.get('variations', [])
+            variations_data = request.data.get("variations", [])
             for variation_data in variations_data:
                 variation = Variation.objects.create(
-                    name=variation_data['name'],
+                    name=variation_data["name"],
                     product=product,
-                    is_sku_vary=variation_data['is_sku_vary'],
-                    is_price_vary=variation_data.get('is_price_vary', False),
-                    is_quantity_vary=variation_data.get('is_quantity_vary', False)
+                    is_sku_vary=variation_data["is_sku_vary"],
+                    is_price_vary=variation_data.get("is_price_vary", False),
+                    is_quantity_vary=variation_data.get("is_quantity_vary", False),
                 )
                 variation_instances[variation.name] = variation
-                
-                for option_data in variation_data.get('options', []):
+
+                for option_data in variation_data.get("options", []):
                     VariationOption.objects.create(
-                        name=option_data['name'],
-                        variation=variation
+                        name=option_data["name"], variation=variation
                     )
 
-             # ProductVariant 처리
-            variants_data = request.data.get('variants', [])
+            # ProductVariant 처리
+            variants_data = request.data.get("variants", [])
             for variant_data in variants_data:
                 option_one = None
                 option_two = None
 
                 # option_one 찾기
-                if variant_data.get('option_one'):
+                if variant_data.get("option_one"):
                     option_one = VariationOption.objects.filter(
-                        name=variant_data.get('option_one'),
-                        variation__in=variation_instances.values()
+                        name=variant_data.get("option_one"),
+                        variation__in=variation_instances.values(),
                     ).first()
 
                 # option_two 찾기
-                if variant_data.get('option_two'):
+                if variant_data.get("option_two"):
                     option_two = VariationOption.objects.filter(
-                        name=variant_data.get('option_two'),
-                        variation__in=variation_instances.values()
+                        name=variant_data.get("option_two"),
+                        variation__in=variation_instances.values(),
                     ).first()
 
                 ProductVariant.objects.create(
                     product=product,
                     option_one=option_one,
                     option_two=option_two,
-                    sku=variant_data.get('sku', ''),
-                    price=variant_data.get('price', 0),
-                    quantity=variant_data.get('quantity', 0),
-                    is_visible=variant_data.get('is_visible', True)
+                    sku=variant_data.get("sku", ""),
+                    price=variant_data.get("price", 0),
+                    quantity=variant_data.get("quantity", 0),
+                    is_visible=variant_data.get("is_visible", True),
                 )
 
-            materials_data = request.data.get('materials', [])  # 재료 이름 목록을 받음
+            materials_data = request.data.get("materials", [])  # 재료 이름 목록을 받음
             for material_name in materials_data:
                 material, created = Material.objects.get_or_create(name=material_name)
                 product.materials.add(material)

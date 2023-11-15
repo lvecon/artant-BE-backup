@@ -85,15 +85,24 @@ CORS_ORIGIN_WHITELIST = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
     "http://147.46.245.226:8001",
+    "http://artant.shop",
+    "http://www.artant.shop",
 ]
 
-CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:3000", "http://147.46.245.226:8001"]
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:3000",
+    "http://147.46.245.226:8001",
+    "http://artant.shop",
+    "http://www.artant.shop",
+]
 
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://147.46.245.226:8001",
+    "http://artant.shop",
+    "http://www.artant.shop",
     "chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld",
 ]
 
@@ -130,15 +139,15 @@ WSGI_APPLICATION = "config.wsgi.application"
 # }
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': env('RDS_DB_NAME'),
-        'USER': env('RDS_USERNAME'),
-        'PASSWORD': env('RDS_PASSWORD'),
-        'HOST': env('RDS_HOSTNAME'), # Or an IP Address that your DB is hosted on
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env("RDS_DB_NAME"),
+        "USER": env("RDS_USERNAME"),
+        "PASSWORD": env("RDS_PASSWORD"),
+        "HOST": env("RDS_HOSTNAME"),  # Or an IP Address that your DB is hosted on
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
         },
     }
 }
@@ -179,7 +188,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
