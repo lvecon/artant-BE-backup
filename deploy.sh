@@ -2,7 +2,7 @@
 
 # Define the SSH key and user@host
 KEY="~/.ssh/ec2-key-artant-dev.pem"
-USER_HOST="ec2-user@ec2-13-125-251-12.ap-northeast-2.compute.amazonaws.com"
+USER_HOST="ec2-user@ec2-54-180-99-43.ap-northeast-2.compute.amazonaws.com"
 
 # Get the current branch name on the local machine
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
