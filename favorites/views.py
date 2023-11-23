@@ -92,7 +92,7 @@ class UserFavoritesItems(APIView):
 class FavoriteItemToggle(APIView):
     def get_favoriteItems(self, user):
         try:
-            return FavoriteItem.objects.get(user=user)
+            return FavoriteItem.objects.get_or_create(user=user)
         except FavoriteItem.DoesNotExist:
             raise NotFound
 
