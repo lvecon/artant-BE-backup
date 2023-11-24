@@ -90,11 +90,11 @@ class UserFavoritesItems(APIView):
 
 
 class FavoriteItemToggle(APIView):
-    def get_favoriteItems(self, user):
-        try:
-            return FavoriteItem.objects.get_or_create(user=user)
-        except FavoriteItem.DoesNotExist:
-            raise NotFound
+    # get user's favorite Item
+    def get_favoriteItem(self, user):
+        favorite_item, created = FavoriteItem.objects.get_or_create(user=user)
+        return favorite_item
+   
 
     def get_product(self, product_pk):
         try:
@@ -103,7 +103,7 @@ class FavoriteItemToggle(APIView):
             raise NotFound
 
     def put(self, request, product_pk):
-        favorite_item_list = self.get_favoriteItems(request.user)
+        favorite_item_list = self.get_favoriteItem(request.user)
         product = self.get_product(product_pk)
         if favorite_item_list.products.filter(pk=product_pk).exists():
             favorite_item_list.products.remove(product)
