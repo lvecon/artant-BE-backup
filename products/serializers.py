@@ -387,6 +387,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
     materials = serializers.SerializerMethodField()
     variations = VariationSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
@@ -403,6 +404,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'category',
             'primary_color',
             'secondary_color',
+            'tags',
             'materials',
             'description',
             'price',
@@ -427,6 +429,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     def get_category(self, obj):
         return [category.name for category in obj.category.all()]
+    
+    def get_tags(self, obj):
+        return [tag.tag for tag in obj.tags.all()]
     
     def get_materials(self, obj):
         return [material.name for material in obj.materials.all()]
