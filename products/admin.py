@@ -3,7 +3,6 @@ from django.contrib import admin
 from products.models import (
     Category,
     CategoryDetail,
-    DetailValue,
     Product,
     ProductImage,
     ProductTag,
@@ -39,14 +38,6 @@ class CategoryDetailAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ("__str__", "name")
 
-
-@admin.register(DetailValue)
-class DetailValueAdmin(admin.ModelAdmin):
-    list_display = (
-        "detail_name",
-        "product",
-        "value",
-    )
 
 
 @admin.register(ProductTag)
