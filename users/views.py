@@ -17,6 +17,7 @@ from products.models import (
     Variation,
     VariationOption,
     ProductVariant,
+    ProductTag
 )
 from reviews.models import Review
 from . import serializers
@@ -405,6 +406,12 @@ class CreateProduct(APIView):
             for material_name in materials_data:
                 material, created = Material.objects.get_or_create(name=material_name)
                 product.materials.add(material)
+
+            # 태그 처리
+            tags_data = request.data.get("tags", [])  # 사용자가 제공한 태그 목록
+            for tag_name in tags_data:
+                tag, created = ProductTag.objects.get_or_create(tag=tag_name)
+                product.tags.add(tag)
 
             product.category.add(category.id)
             if primary_color:
