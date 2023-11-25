@@ -28,7 +28,7 @@ class CartLine(CommonModel):
         related_name="cartlines",
     )
     product_variant = models.ForeignKey(
-        "products.ProductVariant",
+        "product_variants.ProductVariant",
         on_delete=models.CASCADE,
         related_name="cartlines",
         null=True,
@@ -39,4 +39,3 @@ class CartLine(CommonModel):
 
     def __str__(self):
         return f"{self.product_variant} : {self.quantity} in {self.cart.user}'s cart"
-

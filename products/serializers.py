@@ -5,22 +5,20 @@ from favorites.models import FavoriteItem
 from .models import (
     Product,
     ProductImage,
-    ProductTag,
     ProductVideo,
-    Color,
-    VariationOption,
-    Variation,
+)
+from product_variants.models import (
     ProductVariant,
 )
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
+from product_variants.serializers import (
+    VariationSerializer,
+    VariationOptionSerializer,
+    ProductVariantSerializer,
+)
+from product_attributes.serializers import ColorSerializer
 from cart.models import CartLine
-
-
-class ProductTagSerializer(ModelSerializer):
-    class Meta:
-        model = ProductTag
-        fields = "__all__"
 
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -35,74 +33,16 @@ class VideoSerializer(serializers.ModelSerializer):
         fields = ("pk", "video")
 
 
-class ColorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Color
-        fields = ("pk", "name")
-
-
-# class VariantValueSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = V
-#         fields = (
-#             "pk",
-#             "value",
-#         )
-
-
-# class VariantOptionSerializer(serializers.ModelSerializer):
-#     value = VariantValueSerializer(many=True, read_only=True)
-
-#     class Meta:
-#         model = VariantOption
-#         fields = ["name", "value"]
-
-class VariationSerializer(serializers.ModelSerializer):
-    options = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Variation
-        fields = (
-            "name",
-            "is_sku_vary",
-            "is_price_vary",
-            "is_quantity_vary",
-            "options", 
-        )
-
-    def get_options(self, obj):
-        return [option.name for option in obj.options.all()]
-
-class VariationOptionSerializer(serializers.ModelSerializer):
-    variation = serializers.CharField(source='variation.name')
-
-    class Meta:
-        model = VariationOption
-        fields = (
-            "variation",
-            "name",
-        )
-
-class ProductVariantSerializer(serializers.ModelSerializer):
-    option_one = VariationOptionSerializer(read_only=True)
-    option_two = VariationOptionSerializer(read_only=True)
- 
-
-    class Meta:
-        model = ProductVariant
-        fields = (
-            "option_one",
-            "option_two",
-            "sku",
-            "price",
-            "quantity",
-            "is_visible",
-        )
-
 class ProductSnapshotSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ('pk', 'name', 'thumbnail', "price",)
+        fields = (
+            "pk",
+            "name",
+            "thumbnail",
+            "price",
+        )
+
 
 class TinyProductVariantSerializer(serializers.ModelSerializer):
     option_one = VariationOptionSerializer(read_only=True)
@@ -116,7 +56,7 @@ class TinyProductVariantSerializer(serializers.ModelSerializer):
             "option_one",
             "option_two",
         )
-    
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
@@ -137,7 +77,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
     materials = serializers.SerializerMethodField()
- 
+
     options = serializers.SerializerMethodField()
     separate_options = serializers.SerializerMethodField()
 
@@ -185,10 +125,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "item_height",
             "primary_color",
             "secondary_color",
-            'materials',
+            "materials",
             "description",
-            'options',
-            'separate_options'
+            "options",
+            "separate_options",
         )
 
     def get_rating(self, product):
@@ -249,32 +189,31 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         ).count()
 
         return count_in_carts
-    
+
     def get_primary_color(self, obj):
         return obj.primary_color.name if obj.primary_color else None
 
     def get_secondary_color(self, obj):
         return obj.secondary_color.name if obj.secondary_color else None
-    
+
     def get_materials(self, obj):
         return [material.name for material in obj.materials.all()]
 
     def get_options(self, product):
         options_list = []
         for variant in product.variants.all():
-
             option_labels = []
             if variant.option_one:
                 option_labels.append(variant.option_one.name)
             if variant.option_two:
                 option_labels.append(variant.option_two.name)
-            
+
             price = f"{variant.price:,}원" if variant.price else ""
             option_str = "x".join(option_labels) + (f" ({price})" if price else "")
             options_list.append(option_str)
-        
+
         return options_list
-    
+
     def get_separate_options(self, product):
         separate_options_dict = {}
         for variation in product.variations.all():
@@ -284,9 +223,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             option_names = [option.name for option in options if option.name]
             if option_names:
                 separate_options_dict[variation.name] = option_names
-        
+
         # 각각의 옵션 카테고리별로 집합을 리스트 형태로 변환
         return [{key: value} for key, value in separate_options_dict.items()]
+
 
 class ProductListSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
@@ -360,7 +300,6 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
-    
 
 
 class TinyProductSerializer(serializers.ModelSerializer):
@@ -395,30 +334,30 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id',
-            'shop',
-            'name',
-            'made_by',
-            'product_type',
-            'product_creation_date',
-            'category',
-            'primary_color',
-            'secondary_color',
-            'tags',
-            'materials',
-            'description',
-            'price',
-            'quantity',
-            'sku',
-            'processing_min',
-            'processing_max',
-            'shipping_price',
-            'thumbnail',
-            'is_personalization_enabled',
-            'is_personalization_optional',
-            'personalization_guide',
-            'variations',
-            'variants',
+            "id",
+            "shop",
+            "name",
+            "made_by",
+            "product_type",
+            "product_creation_date",
+            "category",
+            "primary_color",
+            "secondary_color",
+            "tags",
+            "materials",
+            "description",
+            "price",
+            "quantity",
+            "sku",
+            "processing_min",
+            "processing_max",
+            "shipping_price",
+            "thumbnail",
+            "is_personalization_enabled",
+            "is_personalization_optional",
+            "personalization_guide",
+            "variations",
+            "variants",
         ]
 
     def get_primary_color(self, obj):
@@ -429,30 +368,12 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     def get_category(self, obj):
         return [category.name for category in obj.category.all()]
-    
+
     def get_tags(self, obj):
         return [tag.tag for tag in obj.tags.all()]
-    
+
     def get_materials(self, obj):
         return [material.name for material in obj.materials.all()]
-
-
-class PhotoSerializer(ModelSerializer):
-    class Meta:
-        model = ProductImage
-        fields = (
-            "pk",
-            "image",
-        )
-
-
-class VideoSerializer(ModelSerializer):
-    class Meta:
-        model = ProductVideo
-        fields = (
-            "pk",
-            "video",
-        )
 
 
 class EditProductSerializer(serializers.ModelSerializer):
@@ -521,10 +442,8 @@ class EditProductSerializer(serializers.ModelSerializer):
     def get_subCategory(self, product):
         return product.category.get(level=3).name
 
-
     def get_shop_pk(self, product):
         return product.shop.pk
-
 
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller

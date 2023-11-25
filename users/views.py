@@ -9,21 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from users.models import User
-from shops.models import Shop
-from products.models import (
-    Product,
-    Category,
-    Color,
-    Material,
-    Variation,
-    VariationOption,
-    ProductVariant,
-    ProductTag
-)
-from reviews.models import Review
 from . import serializers
-from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
-from products.serializers import ProductListSerializer, ProductCreateSerializer
 
 
 class Me(APIView):
@@ -119,5 +105,3 @@ class LogOut(APIView):
     def post(self, request):
         logout(request)
         return Response({"ok": "bye!"})
-
-

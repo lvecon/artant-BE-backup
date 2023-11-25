@@ -12,14 +12,10 @@ from users.models import User
 from shops.models import Shop
 from products.models import (
     Product,
-    Category,
     Color,
-    Material,
-    Variation,
-    VariationOption,
-    ProductVariant,
-    ProductTag
 )
+from product_attributes.models import Category, Material, ProductTag
+from product_variants.models import ProductVariant, Variation, VariationOption
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
