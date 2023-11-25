@@ -19,7 +19,7 @@ class FavoriteItem(models.Model):
 
 class FavoriteShop(models.Model):
     shops = models.ManyToManyField(
-        "users.Shop",
+        "shops.Shop",
         related_name="favorites_shop",
     )
     user = models.ForeignKey(

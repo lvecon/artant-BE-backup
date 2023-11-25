@@ -28,7 +28,7 @@ class Order(CommonModel):
         on_delete=models.SET_NULL,
     )
     shop = models.ForeignKey(
-        "users.Shop",
+        "shops.Shop",
         blank=True,
         null=True,
         related_name="orders",

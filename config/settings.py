@@ -45,6 +45,7 @@ THIRD_PARTY_APPS = [
 CUSTOM_APPS = [
     "products.apps.ProductsConfig",
     "users.apps.UsersConfig",
+    "shops.apps.ShopsConfig",
     "discount.apps.DiscountConfig",
     "order.apps.OrderConfig",
     "cart.apps.CartConfig",
@@ -121,6 +122,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
+            
         },
     },
 ]

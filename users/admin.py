@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from users.models import Address, Section, Shop, User
+from users.models import Address, User
 
 
 @admin.register(Address)
@@ -54,22 +54,4 @@ class CustomUserAdmin(UserAdmin):
         "username",
         "email",
         "name",
-    )
-
-
-@admin.register(Shop)
-class ShopAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "shop_name",
-        "description",
-        "website_url",
-    )
-
-
-@admin.register(Section)
-class SectionAdmin(admin.ModelAdmin):
-    list_display = (
-        "shop",
-        "title",
     )

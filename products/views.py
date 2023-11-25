@@ -4,7 +4,6 @@ import requests
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
 from products import serializers
-from users.models import Shop
 from products.models import Product, UserProductTimestamp
 from reviews.models import Review, ReviewReply
 from products.models import Category

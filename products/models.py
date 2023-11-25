@@ -76,7 +76,7 @@ class Product(CommonModel):
     original_price = models.PositiveIntegerField(null=True, blank=True)
     price = models.PositiveIntegerField()
     shop = models.ForeignKey(
-        "users.Shop",
+        "shops.Shop",
         on_delete=models.CASCADE,
         related_name="product",
     )

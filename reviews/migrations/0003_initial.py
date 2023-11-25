@@ -10,27 +10,18 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("direct_messages", "0001_initial"),
+        ("reviews", "0002_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="message",
+            model_name="review",
             name="user",
             field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="messages",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="reviews",
                 to=settings.AUTH_USER_MODEL,
-            ),
-        ),
-        migrations.AddField(
-            model_name="chattingroom",
-            name="users",
-            field=models.ManyToManyField(
-                related_name="chatting_rooms", to=settings.AUTH_USER_MODEL
             ),
         ),
     ]

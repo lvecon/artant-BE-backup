@@ -52,7 +52,7 @@ class ReviewReply(CommonModel):
         related_name="reply",
     )
     shop = models.ForeignKey(
-        "users.Shop",
+        "shops.Shop",
         on_delete=models.CASCADE,
         null=True,
         related_name="reply",

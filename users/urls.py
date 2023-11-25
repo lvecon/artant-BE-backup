@@ -10,13 +10,4 @@ urlpatterns = [
     path("log-in", views.LogIn.as_view()),
     path("log-out", views.LogOut.as_view()),
     path("<int:pk>", views.PublicUser.as_view()),
-    path("shops", views.Shops.as_view()),
-    path("shops/create", views.ShopCreate.as_view()),
-    path("shops/<int:pk>", views.ShopDetail.as_view()),
-    path("shops/<int:pk>/reviews", views.ShopReviews.as_view()),
-    path(
-        "shops/<int:pk>/reviews/images/<int:product_pk>", views.ReviewPhotos.as_view()
-    ),
-    path("shops/<int:pk>/products", views.ShopProducts.as_view()),
-    path("shops/<int:shop_pk>/products/create", views.CreateProduct.as_view()),
 ]
