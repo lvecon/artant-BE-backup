@@ -35,16 +35,6 @@ class Category(models.Model):
         return [detail.detail_name for detail in self.details.all()]
 
 
-class CategoryDetail(models.Model):  # size, color, length
-    category = models.ManyToManyField("Category", related_name="details")
-    detail_name = models.CharField(max_length=32)
-
-    def __str__(self):
-        return self.detail_name
-
-    def getCategory(self):
-        return [category.name for category in self.category.all()]
-
 
 class Color(models.Model):
     name = models.CharField(
@@ -54,18 +44,6 @@ class Color(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class DetailValue(models.Model):  # size-large, medium, small  color - red, green, blue
-    detail_name = models.ForeignKey(
-        "CategoryDetail",
-        on_delete=models.CASCADE,
-    )
-    product = models.ForeignKey(
-        "Product",
-        on_delete=models.CASCADE,
-    )
-    value = models.CharField(max_length=255)
 
 
 class Product(CommonModel):
