@@ -5,6 +5,7 @@ from users.serializers import TinyUserSerializer
 from products.models import Product
 from favorites.models import FavoriteShop
 
+
 class TinyShopSerializer(ModelSerializer):
     # 추가: 4개까지의 썸네일을 가져올 필드 정의
     thumbnails = serializers.SerializerMethodField()
@@ -61,13 +62,13 @@ class ShopSerializer(ModelSerializer):
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     image_urls = serializers.SerializerMethodField()
-    users = TinyUserSerializer(many=True, read_only=True)
+    user = TinyUserSerializer(read_only=True)
 
     class Meta:
         model = Shop
         fields = (
             "pk",
-            "users",
+            "user",
             "shop_name",
             "avatar",
             "description_title",
