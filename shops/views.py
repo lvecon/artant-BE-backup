@@ -214,12 +214,12 @@ class ReviewPhotos(APIView):
 
 
 class CreateProduct(APIView):
+    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
+
     def post(self, request, shop_pk):
         user = request.user
-        try:
-            # 사용자가 소유한 샵을 찾음
-            shop = user.shop.get(pk=shop_pk)
-        except Shop.DoesNotExist:
+        # 사용자의 상점과 요청된 상점 ID가 일치하는지 확인
+        if not user.shop.pk == shop_pk:
             return Response(
                 {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
             )
@@ -331,13 +331,15 @@ class CreateProduct(APIView):
 
 
 class ShopCreate(APIView):
+    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능하도록 설정
+
     def post(self, request):
         data = request.data.copy()
-        data["users"] = [request.user.id]
-        serializer = serializers.ShopCreateSerializer(data=data)
+        data["users"] = [request.user.id]  # 현재 사용자를 상점 소유자로 설정
 
+        serializer = serializers.ShopCreateSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

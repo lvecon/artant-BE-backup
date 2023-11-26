@@ -5,8 +5,11 @@ from users.models import Address
 
 # Create your models here.
 
+
 class Shop(CommonModel):
-    users = models.ManyToManyField("users.User", related_name="shop")
+    user = models.OneToOneField(
+        "users.User", related_name="shop", on_delete=models.CASCADE
+    )
     avatar = models.URLField(blank=True, null=True)
     background_pic = models.URLField(blank=True, null=True)
     shop_name = models.CharField(max_length=256)
