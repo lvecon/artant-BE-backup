@@ -122,7 +122,7 @@ class ShopReviews(APIView):
         end = start + page_size
         shop = self.get_object(pk)
 
-        products = shop.product.all()
+        products = shop.products.all()
         all_reviews = []
         for product in products:
             reviews = product.reviews.all()
@@ -186,7 +186,7 @@ class ShopProducts(APIView):
         end = start + page_size
 
         shop = self.get_object(pk)
-        products = shop.product.all()
+        products = shop.products.all()
 
         total_count = products.count()  # Get the total count of products
 
@@ -225,7 +225,7 @@ class ReviewPhotos(APIView):
         shop = self.get_object(pk)
         product_name = Product.objects.get(pk=product_pk).name
 
-        products = shop.product.all()
+        products = shop.products.all()
         all_reviews = []
         for product in products:
             reviews = product.reviews.filter(images__isnull=False)

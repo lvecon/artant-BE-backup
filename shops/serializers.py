@@ -62,6 +62,7 @@ class ShopSerializer(ModelSerializer):
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     image_urls = serializers.SerializerMethodField()
+    sections_info = serializers.SerializerMethodField()
     user = TinyUserSerializer(read_only=True)
 
     class Meta:
@@ -71,11 +72,11 @@ class ShopDetailSerializer(ModelSerializer):
             "user",
             "shop_name",
             "avatar",
+            "background_pic",
+            "announcement",
+            "sections_info",
             "description_title",
             "description",
-            "background_pic",
-            "description",
-            "announcement",
             "expiration",
             "cancellation",
             "shop_policy_updated_at",
@@ -100,6 +101,16 @@ class ShopDetailSerializer(ModelSerializer):
             getattr(shop, field) for field in image_fields if getattr(shop, field)
         ]
         return image_urls
+
+    def get_sections_info(self, shop):
+        sections = Section.objects.filter(shop=shop)
+        return [
+            {
+                "title": section.title,
+                "product_count": shop.products.filter(section=section).count(),
+            }
+            for section in sections
+        ]
 
 
 class ShopCreateSerializer(serializers.ModelSerializer):

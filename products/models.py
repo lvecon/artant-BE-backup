@@ -23,7 +23,7 @@ class Product(CommonModel):
     shop = models.ForeignKey(
         "shops.Shop",
         on_delete=models.CASCADE,
-        related_name="product",
+        related_name="products",
     )
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
     sku = models.CharField(max_length=140, null=True, blank=True)
