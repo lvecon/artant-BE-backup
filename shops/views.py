@@ -175,9 +175,18 @@ class ShopProducts(APIView):
             raise NotFound
 
     def get(self, request, pk):
+        shop = self.get_object(pk)
+        products = shop.products.all()
+
+        # 섹션 제목 기반 필터링
+        section_title = request.query_params.get("section")
+        if section_title:
+            sections = Section.objects.filter(title=section_title, shop=shop)
+            if sections.exists():
+                products = products.filter(section__in=sections)
+
         try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
+            page = int(request.query_params.get("page", 1))
         except ValueError:
             page = 1
 
@@ -185,18 +194,14 @@ class ShopProducts(APIView):
         start = (page - 1) * page_size
         end = start + page_size
 
-        shop = self.get_object(pk)
-        products = shop.products.all()
-
         total_count = products.count()  # Get the total count of products
 
         serializer = ProductListSerializer(
             products[start:end],
             many=True,
-            context={"reqeust": request},
+            context={"request": request},
         )
 
-        # Create a dictionary containing 'total_counts' along with serialized data
         response_data = {
             "total_count": total_count,
             "products": serializer.data,
