@@ -1,8 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import User
-from products.models import Product
-from favorites.models import FavoriteShop
 
 
 class TinyUserSerializer(ModelSerializer):
@@ -17,17 +15,17 @@ class TinyUserSerializer(ModelSerializer):
 
 
 class PrivateUserSerializer(ModelSerializer):
-    shop_pks = serializers.SerializerMethodField()
-    shop_names = serializers.SerializerMethodField()
-    shop_avatars = serializers.SerializerMethodField()
+    shop_pk = serializers.SerializerMethodField()
+    shop_name = serializers.SerializerMethodField()
+    shop_avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "pk",
-            "shop_pks",
-            "shop_names",
-            "shop_avatars",
+            "shop_pk",
+            "shop_name",
+            "shop_avatar",
             "username",
             "avatar",
             "email",
@@ -41,15 +39,11 @@ class PrivateUserSerializer(ModelSerializer):
             "address",
         )
 
-    def get_shop_pks(self, user):
-        shop_pks = user.shop.values_list("pk", flat=True)
-        return list(shop_pks)
+    def get_shop_pk(self, user):
+        return user.shop.pk if hasattr(user, "shop") and user.shop else None
 
-    def get_shop_names(self, user):
-        shop_pks = user.shop.values_list("shop_name", flat=True)
-        return list(shop_pks)
+    def get_shop_name(self, user):
+        return user.shop.shop_name if hasattr(user, "shop") and user.shop else None
 
-    def get_shop_avatars(self, user):
-        shop_pks = user.shop.values_list("avatar", flat=True)
-        return list(shop_pks)
-
+    def get_shop_avatar(self, user):
+        return user.shop.avatar if hasattr(user, "shop") and user.shop else None

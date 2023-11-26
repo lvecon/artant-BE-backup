@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from users.models import User
-from shops.models import Shop
+from shops.models import Shop, Section
 from products.models import (
     Product,
     Color,
@@ -40,6 +40,50 @@ class Shops(APIView):
 
         serializer = serializers.TinyShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
+
+    def post(self, request):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)  # 권한 확인
+
+        # user의 상점 소유 여부 확인
+        if hasattr(request.user, "shop"):
+            return Response(
+                {"error": "You already have a shop."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = request.data.copy()
+        data["user"] = request.user.id  # 현재 사용자를 상점 소유자로 설정
+
+        serializer = serializers.ShopCreateSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# TODO: Update 전용 serializer 생성. shop model 이미지 필드들 따로 모델 만들어서 구현하기!
+class ShopUpdate(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        try:
+            shop = Shop.objects.get(pk=pk, user=request.user)
+        except Shop.DoesNotExist:
+            return Response(
+                {
+                    "error": "Shop not found or you do not have permission to edit this shop."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = serializers.ShopSerializer(shop, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ShopDetail(APIView):
@@ -78,7 +122,7 @@ class ShopReviews(APIView):
         end = start + page_size
         shop = self.get_object(pk)
 
-        products = shop.product.all()
+        products = shop.products.all()
         all_reviews = []
         for product in products:
             reviews = product.reviews.all()
@@ -131,9 +175,18 @@ class ShopProducts(APIView):
             raise NotFound
 
     def get(self, request, pk):
+        shop = self.get_object(pk)
+        products = shop.products.all()
+
+        # 섹션 제목 기반 필터링
+        section_title = request.query_params.get("section")
+        if section_title:
+            sections = Section.objects.filter(title=section_title, shop=shop)
+            if sections.exists():
+                products = products.filter(section__in=sections)
+
         try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
+            page = int(request.query_params.get("page", 1))
         except ValueError:
             page = 1
 
@@ -141,18 +194,14 @@ class ShopProducts(APIView):
         start = (page - 1) * page_size
         end = start + page_size
 
-        shop = self.get_object(pk)
-        products = shop.product.all()
-
         total_count = products.count()  # Get the total count of products
 
         serializer = ProductListSerializer(
             products[start:end],
             many=True,
-            context={"reqeust": request},
+            context={"request": request},
         )
 
-        # Create a dictionary containing 'total_counts' along with serialized data
         response_data = {
             "total_count": total_count,
             "products": serializer.data,
@@ -181,7 +230,7 @@ class ReviewPhotos(APIView):
         shop = self.get_object(pk)
         product_name = Product.objects.get(pk=product_pk).name
 
-        products = shop.product.all()
+        products = shop.products.all()
         all_reviews = []
         for product in products:
             reviews = product.reviews.filter(images__isnull=False)
@@ -214,12 +263,12 @@ class ReviewPhotos(APIView):
 
 
 class CreateProduct(APIView):
+    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
+
     def post(self, request, shop_pk):
         user = request.user
-        try:
-            # 사용자가 소유한 샵을 찾음
-            shop = user.shop.get(pk=shop_pk)
-        except Shop.DoesNotExist:
+        # 사용자의 상점과 요청된 상점 ID가 일치하는지 확인
+        if not user.shop.pk == shop_pk:
             return Response(
                 {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
             )
@@ -250,6 +299,14 @@ class CreateProduct(APIView):
 
         data = request.data.copy()
         data["shop"] = shop_pk
+
+        # 섹션 처리
+        section_title = request.data.get("section")
+        if section_title:
+            section, created = Section.objects.get_or_create(
+                title=section_title, shop_id=shop_pk
+            )
+            data["section"] = section.pk
 
         serializer = ProductCreateSerializer(data=data)
 
@@ -330,14 +387,34 @@ class CreateProduct(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ShopCreate(APIView):
-    def post(self, request):
-        data = request.data.copy()
-        data["users"] = [request.user.id]
-        serializer = serializers.ShopCreateSerializer(data=data)
+# 상품 생성 Or 편집 화면에서 section 생성
+class CreateSection(APIView):
+    permission_classes = [IsAuthenticated]
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def post(self, request, shop_pk):
+        user = request.user
+        # 사용자가 해당 상점의 소유자인지 확인
+        if not user.shop.pk == shop_pk:
+            return Response(
+                {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
+            )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        section_title = request.data.get("section")
+        if not section_title:
+            return Response(
+                {"error": "Section title is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 동일한 제목의 섹션이 이미 있는지 확인
+        if Section.objects.filter(shop_id=shop_pk, title=section_title).exists():
+            return Response(
+                {"error": "A section with this title already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 새 섹션 생성
+        section = Section.objects.create(title=section_title, shop_id=shop_pk)
+
+        serializer = serializers.SectionSerializer(section)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

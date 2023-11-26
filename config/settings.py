@@ -87,6 +87,7 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_WHITELIST = [
     "https://127.0.0.1:3000",
+    "http://127.0.0.1:3000",
     "https://localhost:3000",
     "https://147.46.245.226:8001",
     "https://artant.shop",
@@ -95,6 +96,7 @@ CORS_ORIGIN_WHITELIST = [
 
 CORS_ALLOWED_ORIGINS = [
     "https://127.0.0.1:3000",
+    "http://127.0.0.1:3000",
     "https://147.46.245.226:8001",
     "https://artant.shop",
     "https://www.artant.shop",
@@ -104,6 +106,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "https://127.0.0.1:3000",
+    "http://127.0.0.1:3000",
     "https://147.46.245.226:8001",
     "https://artant.shop",
     "https://www.artant.shop",

@@ -354,19 +354,19 @@ class ProductReviewReply(APIView):
         return Response(serializer.data)
 
     def post(self, request, pk, review_pk):
-        review = Review.objects.get(pk=review_pk)
-        user_shops = request.user.shop.all()
         try:
-            matching_shop = user_shops.get(pk=review.product.shop.pk)
-        except:
-            return Response(
-                {"error": "You don't have permission to post a reply for this review."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            review = Review.objects.get(pk=review_pk)
+        except Review.DoesNotExist:
+            raise NotFound("Review not found.")
 
+        # 상점 권한 확인
+        if review.product.shop != request.user.shop:
+            raise PermissionDenied(
+                "You don't have permission to post a reply for this review."
+            )
         serializer = ReviewReplySerializer(data=request.data)
         if serializer.is_valid():
-            reply = serializer.save(review=review, shop=matching_shop)
+            reply = serializer.save(review=review, shop=request.user.shop)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

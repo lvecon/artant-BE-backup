@@ -5,8 +5,11 @@ from users.models import Address
 
 # Create your models here.
 
+
 class Shop(CommonModel):
-    users = models.ManyToManyField("users.User", related_name="shop")
+    user = models.OneToOneField(
+        "users.User", related_name="shop", on_delete=models.CASCADE
+    )
     avatar = models.URLField(blank=True, null=True)
     background_pic = models.URLField(blank=True, null=True)
     shop_name = models.CharField(max_length=256)
@@ -39,25 +42,14 @@ class Shop(CommonModel):
         return self.shop_name
 
 
-class ShopTag(models.Model):
-    title = models.CharField(max_length=64)
-    description = models.CharField(max_length=256)
-    shop = models.ManyToManyField(
-        Shop,
-        blank=True,
-        related_name="tags",
-    )
-
-
 class Section(models.Model):
     title = models.CharField(max_length=64)
     rank = models.PositiveIntegerField(null=True, unique=True)
     shop = models.ForeignKey(
         "Shop",
         on_delete=models.CASCADE,
-        related_name="+",
+        related_name="sections",
     )
-    product = models.ManyToManyField(
-        "products.Product",
-        related_name="+",
-    )
+
+    def __str__(self):
+        return self.title

@@ -68,7 +68,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     shop_pk = serializers.SerializerMethodField()
     shop_avatar = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
-    sellers = serializers.SerializerMethodField()
+    shop_owner = serializers.SerializerMethodField()
     shipping_date = serializers.SerializerMethodField()
     cart_count = serializers.SerializerMethodField()
     images = ImageSerializer(many=True, read_only=True)
@@ -89,7 +89,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "shop_pk",
             "shop_name",
             "shop_avatar",
-            "sellers",
+            "shop_owner",
             "original_price",
             "price",
             "discount_rate",
@@ -159,9 +159,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_shop_pk(self, product):
         return product.shop.pk
 
-    def get_sellers(self, product):
-        users = product.shop.users.all()
-        serializer = TinyUserSerializer(users, many=True)
+    def get_shop_owner(self, product):
+        user = product.shop.user
+        serializer = TinyUserSerializer(user)
         return serializer.data
 
     def get_is_star_seller(self, product):
@@ -344,6 +344,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "primary_color",
             "secondary_color",
             "tags",
+            "section",
             "materials",
             "description",
             "price",

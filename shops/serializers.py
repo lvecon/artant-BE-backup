@@ -1,9 +1,10 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from .models import Shop
+from .models import Shop, Section
 from users.serializers import TinyUserSerializer
 from products.models import Product
 from favorites.models import FavoriteShop
+
 
 class TinyShopSerializer(ModelSerializer):
     # 추가: 4개까지의 썸네일을 가져올 필드 정의
@@ -61,20 +62,21 @@ class ShopSerializer(ModelSerializer):
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     image_urls = serializers.SerializerMethodField()
-    users = TinyUserSerializer(many=True, read_only=True)
+    sections_info = serializers.SerializerMethodField()
+    user = TinyUserSerializer(read_only=True)
 
     class Meta:
         model = Shop
         fields = (
             "pk",
-            "users",
+            "user",
             "shop_name",
             "avatar",
+            "background_pic",
+            "announcement",
+            "sections_info",
             "description_title",
             "description",
-            "background_pic",
-            "description",
-            "announcement",
             "expiration",
             "cancellation",
             "shop_policy_updated_at",
@@ -100,8 +102,24 @@ class ShopDetailSerializer(ModelSerializer):
         ]
         return image_urls
 
+    def get_sections_info(self, shop):
+        sections = Section.objects.filter(shop=shop)
+        return [
+            {
+                "title": section.title,
+                "product_count": shop.products.filter(section=section).count(),
+            }
+            for section in sections
+        ]
+
 
 class ShopCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
         fields = "__all__"
+
+
+class SectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Section
+        fields = ["id", "title", "rank", "shop"]
