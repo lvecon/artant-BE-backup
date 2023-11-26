@@ -44,7 +44,10 @@ THIRD_PARTY_APPS = [
 
 CUSTOM_APPS = [
     "products.apps.ProductsConfig",
+    "product_attributes.apps.ProductAttributesConfig",
+    "product_variants.apps.ProductVariantsConfig",
     "users.apps.UsersConfig",
+    "shops.apps.ShopsConfig",
     "discount.apps.DiscountConfig",
     "order.apps.OrderConfig",
     "cart.apps.CartConfig",
@@ -56,6 +59,7 @@ CUSTOM_APPS = [
     "direct_messages.apps.DirectMessagesConfig",
     "events.apps.EventsConfig",
     "product_collections.apps.ProductCollectionsConfig",
+    "user_activities.apps.UserActivitiesConfig",
 ]
 
 SYSTEM_APPS = [

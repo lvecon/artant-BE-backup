@@ -7,65 +7,10 @@ from . import (
     ProductCreationDate,
     ProductMadeByChoices,
     ProductTypeChoices,
-    ProductColorChoices,
     ProductItemTypeChoices,
 )
 
-
-class Category(models.Model):
-    name = models.CharField(max_length=256)
-    description = models.CharField(max_length=256, null=True, blank=True)
-    parent = models.ForeignKey(
-        "self",
-        null=True,
-        blank=True,
-        related_name="children",
-        on_delete=models.CASCADE,
-    )
-    background_image = models.ImageField(
-        blank=True,
-        null=True,
-    )
-    level = models.IntegerField()
-
-    def __str__(self):
-        return self.name
-
-    def getDetail(self):
-        return [detail.detail_name for detail in self.details.all()]
-
-
-class CategoryDetail(models.Model):  # size, color, length
-    category = models.ManyToManyField("Category", related_name="details")
-    detail_name = models.CharField(max_length=32)
-
-    def __str__(self):
-        return self.detail_name
-
-    def getCategory(self):
-        return [category.name for category in self.category.all()]
-
-
-class Color(models.Model):
-    name = models.CharField(
-        max_length=20,
-        choices=ProductColorChoices.choices,
-    )
-
-    def __str__(self):
-        return self.name
-
-
-class DetailValue(models.Model):  # size-large, medium, small  color - red, green, blue
-    detail_name = models.ForeignKey(
-        "CategoryDetail",
-        on_delete=models.CASCADE,
-    )
-    product = models.ForeignKey(
-        "Product",
-        on_delete=models.CASCADE,
-    )
-    value = models.CharField(max_length=255)
+from product_attributes.models import Color
 
 
 class Product(CommonModel):
@@ -76,14 +21,14 @@ class Product(CommonModel):
     original_price = models.PositiveIntegerField(null=True, blank=True)
     price = models.PositiveIntegerField()
     shop = models.ForeignKey(
-        "users.Shop",
+        "shops.Shop",
         on_delete=models.CASCADE,
         related_name="product",
     )
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
     sku = models.CharField(max_length=140, null=True, blank=True)
     category = models.ManyToManyField(
-        "Category",
+        "product_attributes.Category",
         related_name="product",
     )
 
@@ -107,9 +52,21 @@ class Product(CommonModel):
         choices=ProductItemTypeChoices.choices,
         default="Handmade",
     )
-    primary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_color_products')
-    secondary_color = models.ForeignKey(Color, on_delete=models.SET_NULL, null=True, blank=True, related_name='secondary_color_products')
-    materials = models.ManyToManyField('Material', blank=True)
+    primary_color = models.ForeignKey(
+        Color,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="primary_color_products",
+    )
+    secondary_color = models.ForeignKey(
+        Color,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="secondary_color_products",
+    )
+    materials = models.ManyToManyField("product_attributes.Material", blank=True)
 
     processing_min = models.CharField(max_length=32, default=3)
     processing_max = models.CharField(max_length=32, default=7)
@@ -139,7 +96,6 @@ class Product(CommonModel):
     personalization_guide = models.CharField(max_length=32, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
-
 
     def __str__(self):
         return self.name
@@ -179,14 +135,6 @@ def set_original_price(sender, instance, **kwargs):
         instance.original_price = instance.price
 
 
-class ProductTag(models.Model):
-    tag = models.CharField(max_length=32, unique=True)
-    product = models.ManyToManyField(
-        "Product",
-        related_name="tags",
-    )
-
-
 class ProductImage(CommonModel):
     image = models.URLField()
     product = models.ForeignKey(
@@ -209,52 +157,3 @@ class ProductVideo(CommonModel):
 
     def __str__(self):
         return f"{self.product}"
-
-
-class Variation(models.Model):
-    name = models.CharField(max_length=255)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variations')
-    is_sku_vary = models.BooleanField(default=False) 
-    is_price_vary = models.BooleanField(default=False) 
-    is_quantity_vary = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.name} : {self.product.name}"
-
-class VariationOption(models.Model):
-    name = models.CharField(max_length=255, null=True)
-    variation = models.ForeignKey(Variation, on_delete=models.CASCADE, null=True, related_name='options')
-
-    def __str__(self):
-        return f"{self.variation.name} - {self.name} : {self.variation.product.name}"
-
-class ProductVariant(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    option_one = models.ForeignKey(VariationOption, on_delete=models.CASCADE, related_name='variants_as_option_one', null=True, blank=True)
-    option_two = models.ForeignKey(VariationOption, on_delete=models.CASCADE, related_name='variants_as_option_two', null=True, blank=True)
-    sku = models.CharField(max_length=255, null=True, blank=True)
-    price = models.PositiveIntegerField(null=True, blank=True)
-    quantity = models.PositiveIntegerField(null=True, blank=True)
-    is_visible = models.BooleanField(default=True)
-
-    def __str__(self):
-        options = filter(None, [self.option_one, self.option_two])
-        option_descriptions = " x ".join(option.name for option in options)
-        return f"{self.product.name} - {option_descriptions}"
-
-class UserProductTimestamp(models.Model):
-    product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name="timestamps"
-    )
-    user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="timestamps"
-    )
-    timestamp = models.DateTimeField("TTime Stamp", blank=True, null=True)
-
-
-
-class Material(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return f"{self.name}"

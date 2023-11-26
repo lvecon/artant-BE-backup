@@ -33,22 +33,6 @@ class ProductTypeChoices(models.TextChoices):
     SUPPLY = ("A supply or tool to make things", "A supply or tool to make things")
 
 
-class ProductColorChoices(models.TextChoices):
-    White = ("White", "White")
-    Black = ("Black", "Black")
-    Blue = ("Blue", "Blue")
-    Green = ("Green", "Green")
-    Gray = ("Gray", "Gray")
-    Orange = ("Orange", "Orange")
-    Purple = ("Purple", "Purple")
-    Red = ("Red", "Red")
-    Brown = ("Brown", "Brown")
-    Yellow = ("Yellow", "Yellow")
-    Gold = ("Gold", "Gold")
-    Silver = ("Silver", "Silver")
-    Colorful = ("Colorful", "Colorful")
-
-
 class ProductItemTypeChoices(models.TextChoices):
     Handmade = ("Handmade", "Handmade")
     Vintage = ("Vintage", "Vintage")

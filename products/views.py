@@ -4,10 +4,15 @@ import requests
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
 from products import serializers
-from users.models import Shop
-from products.models import Product, UserProductTimestamp
+from products.models import Product
+from user_activities.models import UserProductTimestamp
 from reviews.models import Review, ReviewReply
-from products.models import Category
+from products.models import (
+    Product,
+    Color,
+)
+from product_attributes.models import Category, Material, ProductTag
+from product_variants.models import ProductVariant, Variation, VariationOption
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework import status
 from django.utils.timezone import now
@@ -207,24 +212,6 @@ class ProductDetails(APIView):
         #     raise PermissionDenied
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class RecentlyViewed(APIView):
-    def get(self, request):
-        user = request.user
-        recently_viewed_timestamps = UserProductTimestamp.objects.filter(
-            user=user.pk
-        ).order_by("-timestamp")[:10]
-        recently_viewed_products = [
-            timestamp.product for timestamp in recently_viewed_timestamps
-        ]
-
-        serializer = serializers.ProductListSerializer(
-            recently_viewed_products,
-            many=True,
-            context={"request": request},
-        )
-        return Response(serializer.data)
 
 
 class ProductReviews(APIView):
@@ -566,4 +553,3 @@ class EditProduct(APIView):
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST,
             )
-

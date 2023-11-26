@@ -8,7 +8,7 @@ from rest_framework.exceptions import (
     PermissionDenied,
 )
 from products.models import Product
-from users.models import Shop
+from shops.models import Shop
 from .models import FavoriteItem, FavoriteShop
 from .serializer import (
     FavoriteItemSerializer,

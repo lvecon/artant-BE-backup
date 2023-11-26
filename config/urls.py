@@ -21,7 +21,7 @@ from django.conf import settings
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/favorites/", include("favorites.urls")),
+    path("api/v1/shops/", include("shops.urls")),
     path("api/v1/users/", include("users.urls")),
     path("api/v1/products/", include("products.urls")),
     path("api/v1/reviews/", include("reviews.urls")),
@@ -29,4 +29,7 @@ urlpatterns = [
     path("api/v1/purchase/", include("purchases.urls")),
     path("api/v1/events/", include("events.urls")),
     path("api/v1/collections/", include("product_collections.urls")),
+    path("api/v1/favorites/", include("favorites.urls")),
+    path("api/v1/user-activities/", include("user_activities.urls")),
+    
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
