@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from users.models import User
-from shops.models import Shop
+from shops.models import Shop, Section
 from products.models import (
     Product,
     Color,
@@ -294,6 +294,14 @@ class CreateProduct(APIView):
 
         data = request.data.copy()
         data["shop"] = shop_pk
+
+        # 섹션 처리
+        section_title = request.data.get("section")
+        if section_title:
+            section, created = Section.objects.get_or_create(
+                title=section_title, shop_id=shop_pk
+            )
+            data["section"] = section.pk
 
         serializer = ProductCreateSerializer(data=data)
 

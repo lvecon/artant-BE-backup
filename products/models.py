@@ -67,6 +67,13 @@ class Product(CommonModel):
         related_name="secondary_color_products",
     )
     materials = models.ManyToManyField("product_attributes.Material", blank=True)
+    section = models.ForeignKey(
+        "shops.Section",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+    )
 
     processing_min = models.CharField(max_length=32, default=3)
     processing_max = models.CharField(max_length=32, default=7)

@@ -344,6 +344,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "primary_color",
             "secondary_color",
             "tags",
+            "section",
             "materials",
             "description",
             "price",

@@ -42,16 +42,6 @@ class Shop(CommonModel):
         return self.shop_name
 
 
-class ShopTag(models.Model):
-    title = models.CharField(max_length=64)
-    description = models.CharField(max_length=256)
-    shop = models.ManyToManyField(
-        Shop,
-        blank=True,
-        related_name="tags",
-    )
-
-
 class Section(models.Model):
     title = models.CharField(max_length=64)
     rank = models.PositiveIntegerField(null=True, unique=True)
@@ -60,7 +50,6 @@ class Section(models.Model):
         on_delete=models.CASCADE,
         related_name="sections",
     )
-    product = models.ManyToManyField(
-        "products.Product",
-        related_name="sections",
-    )
+
+    def __str__(self):
+        return self.title
