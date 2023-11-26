@@ -41,6 +41,50 @@ class Shops(APIView):
         serializer = serializers.TinyShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
 
+    def post(self, request):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)  # 권한 확인
+
+        # user의 상점 소유 여부 확인
+        if hasattr(request.user, "shop"):
+            return Response(
+                {"error": "You already have a shop."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = request.data.copy()
+        data["user"] = request.user.id  # 현재 사용자를 상점 소유자로 설정
+
+        serializer = serializers.ShopCreateSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# TODO: Update 전용 serializer 생성. shop model 이미지 필드들 따로 모델 만들어서 구현하기!
+class ShopUpdate(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        try:
+            shop = Shop.objects.get(pk=pk, user=request.user)
+        except Shop.DoesNotExist:
+            return Response(
+                {
+                    "error": "Shop not found or you do not have permission to edit this shop."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = serializers.ShopSerializer(shop, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ShopDetail(APIView):
     def get_object(self, pk):
@@ -328,18 +372,3 @@ class CreateProduct(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class ShopCreate(APIView):
-    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능하도록 설정
-
-    def post(self, request):
-        data = request.data.copy()
-        data["users"] = [request.user.id]  # 현재 사용자를 상점 소유자로 설정
-
-        serializer = serializers.ShopCreateSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

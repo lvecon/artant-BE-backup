@@ -58,9 +58,9 @@ class Section(models.Model):
     shop = models.ForeignKey(
         "Shop",
         on_delete=models.CASCADE,
-        related_name="+",
+        related_name="sections",
     )
     product = models.ManyToManyField(
         "products.Product",
-        related_name="+",
+        related_name="sections",
     )
