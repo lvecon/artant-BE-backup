@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from .models import Shop
+from .models import Shop, Section
 from users.serializers import TinyUserSerializer
 from products.models import Product
 from favorites.models import FavoriteShop
@@ -106,3 +106,9 @@ class ShopCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
         fields = "__all__"
+
+
+class SectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Section
+        fields = ["id", "title", "rank", "shop"]

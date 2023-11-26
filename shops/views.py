@@ -380,3 +380,36 @@ class CreateProduct(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 상품 생성 Or 편집 화면에서 section 생성
+class CreateSection(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, shop_pk):
+        user = request.user
+        # 사용자가 해당 상점의 소유자인지 확인
+        if not user.shop.pk == shop_pk:
+            return Response(
+                {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        section_title = request.data.get("section")
+        if not section_title:
+            return Response(
+                {"error": "Section title is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 동일한 제목의 섹션이 이미 있는지 확인
+        if Section.objects.filter(shop_id=shop_pk, title=section_title).exists():
+            return Response(
+                {"error": "A section with this title already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 새 섹션 생성
+        section = Section.objects.create(title=section_title, shop_id=shop_pk)
+
+        serializer = serializers.SectionSerializer(section)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
