@@ -47,3 +47,53 @@ class PrivateUserSerializer(ModelSerializer):
 
     def get_shop_avatar(self, user):
         return user.shop.avatar if hasattr(user, "shop") and user.shop else None
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "name",
+            "password",
+            "email",
+            "name",
+            "gender",
+            "birthday",
+            "description",
+            "username",
+            "avatar",
+        ]  # Include other relevant fields
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with that email already exists.")
+        return value
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError(
+                "A user with that username already exists."
+            )
+        return value
+
+    def validate_name(self, value):
+        if User.objects.filter(name=value).exists():
+            raise serializers.ValidationError(
+                "A user with that nickname already exists."
+            )
+        return value
+
+    def create(self, validated_data):
+        user = User.objects.create(
+            email=validated_data["email"],
+            name=validated_data["name"],
+            username=validated_data["username"],
+            gender=validated_data["gender"],
+            birthday=validated_data["birthday"],
+            description=validated_data["description"],
+            avatar=validated_data["avatar"],
+        )
+        user.set_password(validated_data["password"])
+        user.save()
+        return user
