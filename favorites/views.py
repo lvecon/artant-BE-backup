@@ -10,14 +10,9 @@ from rest_framework.exceptions import (
 from products.models import Product
 from shops.models import Shop
 from .models import FavoriteProduct, FavoriteShop
-from .serializer import (
-    FavoriteProductSerializer,
-    TinyFavoriteProductSerializer,
-    TinyFavoriteShopSerializer,
-    FavoriteShopSerializer,
-)
 from django.conf import settings
 from products.serializers import ProductListSerializer
+from shops.serializers import TinyShopSerializer
 
 # Create your views here.
 
@@ -101,14 +96,14 @@ class UserFavoritesShops(APIView):
         start = (page - 1) * page_size
         end = page * page_size
 
-        # get favoriteProducts on page
-        favorite_product = self.get_object(user_pk)
-        products = favorite_product.products.all()  # 해당 사용자가 좋아하는 모든 Product 객체 가져오기
-        products_on_page = products[start:end]  # 페이지 범위에 해당하는 Product 객체 가져오기
+        # get favoriteShops on page
+        favorite_shop = self.get_object(user_pk)
+        shops = favorite_shop.shops.all()  # 해당 사용자가 좋아하는 모든 Shop 객체 가져오기
+        shops_on_page = shops[start:end]  # 페이지 범위에 해당하는 Shop 객체 가져오기
 
         serializer = (
-            ProductListSerializer(  # TODO: required fields 만 포함하는 serializer로 추후 수정
-                products_on_page,
+            TinyShopSerializer(  # TODO: required fields 만 포함하는 serializer로 추후 수정
+                shops_on_page,
                 many=True,
                 context={"request": request},
             )
@@ -117,11 +112,9 @@ class UserFavoritesShops(APIView):
 
 
 class FavoriteShopToggle(APIView):
-    def get_favoriteShops(self, user):
-        try:
-            return FavoriteShop.objects.get(user=user)
-        except FavoriteShop.DoesNotExist:
-            raise NotFound
+    def get_favoriteShop(self, user):
+        favorite_shop, _ = FavoriteShop.objects.get_or_create(user=user)
+        return favorite_shop
 
     def get_shop(self, shop_pk):
         try:
@@ -130,10 +123,13 @@ class FavoriteShopToggle(APIView):
             raise NotFound
 
     def put(self, request, shop_pk):
-        favorite_shop_list = self.get_favoriteShops(request.user)
-        shop = self.get_shop(shop_pk)
-        if favorite_shop_list.shops.filter(pk=shop_pk).exists():
-            favorite_shop_list.shops.remove(shop)
+        favorite_shop = self.get_favoriteShop(request.user)
+        product = self.get_shop(shop_pk)
+        if favorite_shop.shops.filter(pk=shop_pk).exists():
+            favorite_shop.shops.remove(product)
+            response_message = {"message": "Shop removed from favorites."}
         else:
-            favorite_shop_list.shops.add(shop)
-        return Response(status=HTTP_200_OK)
+            favorite_shop.shops.add(product)
+            response_message = {"message": "Shop added to favorites."}
+
+        return Response(response_message, status=HTTP_200_OK)

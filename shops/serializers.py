@@ -16,8 +16,6 @@ class TinyShopSerializer(ModelSerializer):
             "pk",
             "shop_name",
             "avatar",
-            "background_pic",
-            "is_star_seller",
             "thumbnails",  # thumbnails 필드 추가
         )
 
