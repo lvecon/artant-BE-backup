@@ -1,10 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 
-from favorites.models import FavoriteItem
-from products.models import (
-    Product,
-)
+
 from .models import (
     VariationOption,
     Variation,

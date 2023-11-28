@@ -2,7 +2,7 @@ from django.db import models
 
 
 # Create your models here.
-class FavoriteItem(models.Model):
+class FavoriteProduct(models.Model):
     products = models.ManyToManyField(
         "products.Product",
         related_name="favorites_item",

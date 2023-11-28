@@ -1,7 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 
-from favorites.models import FavoriteItem
 from .models import Event, EventImage
 
 

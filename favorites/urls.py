@@ -1,9 +1,7 @@
 from django.urls import path
 from .views import (
-    FavoritesItems,
     UserFavoritesItems,
     FavoriteItemToggle,
-    FavoritesShops,
     UserFavoritesShops,
     FavoriteShopToggle,
 )

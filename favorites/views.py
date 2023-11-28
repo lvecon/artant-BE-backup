@@ -9,7 +9,7 @@ from rest_framework.exceptions import (
 )
 from products.models import Product
 from shops.models import Shop
-from .models import FavoriteItem, FavoriteShop
+from .models import FavoriteProduct, FavoriteShop
 from .serializer import (
     FavoriteItemSerializer,
     TinyFavoriteItemSerializer,
@@ -27,8 +27,8 @@ class UserFavoritesItems(APIView):
 
     def get_object(self, pk):
         try:
-            return FavoriteItem.objects.get(user_id=pk)
-        except FavoriteItem.DoesNotExist:
+            return FavoriteProduct.objects.get(user_id=pk)
+        except FavoriteProduct.DoesNotExist:
             raise NotFound
 
     def get(self, request, pk):
