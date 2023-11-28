@@ -1,14 +1,16 @@
 from django.urls import path
 from .views import (
-    UserFavoriteProducts,
-    FavoriteProductToggle,
-    UserFavoriteShops,
+    FavoritesItems,
+    UserFavoritesItems,
+    FavoriteItemToggle,
+    FavoritesShops,
+    UserFavoritesShops,
     FavoriteShopToggle,
 )
 
 urlpatterns = [
-    path("products/user/<int:user_pk>", UserFavoriteProducts.as_view()),
-    path("products/<int:product_pk>", FavoriteProductToggle.as_view()),
-    path("shops/user/<int:user_pk>", UserFavoriteShops.as_view()),
-    path("shops/<int:shop_pk>", FavoriteShopToggle.as_view()),
+    path("products/user/<int:user_pk>", UserFavoritesItems.as_view()),
+    path("products/toggle/<int:product_pk>", FavoriteItemToggle.as_view()),
+    path("shops/user/<int:user_pk>", UserFavoritesShops.as_view()),
+    path("shops/toggle/<int:shop_pk>", FavoriteShopToggle.as_view()),
 ]

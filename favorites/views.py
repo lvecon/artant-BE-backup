@@ -9,10 +9,10 @@ from rest_framework.exceptions import (
 )
 from products.models import Product
 from shops.models import Shop
-from .models import FavoriteProduct, FavoriteShop
+from .models import FavoriteItem, FavoriteShop
 from .serializer import (
-    FavoriteProductSerializer,
-    TinyFavoriteProductSerializer,
+    FavoriteItemSerializer,
+    TinyFavoriteItemSerializer,
     TinyFavoriteShopSerializer,
     FavoriteShopSerializer,
 )
@@ -22,29 +22,28 @@ from products.serializers import ProductListSerializer
 # Create your views here.
 
 
-# get specific user's favorite products
-class UserFavoriteProducts(APIView):
+class UserFavoritesItems(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_object(self, user_pk):
+    def get_object(self, pk):
         try:
-            return FavoriteProduct.objects.get(user_id=user_pk)
-        except FavoriteProduct.DoesNotExist:
+            return FavoriteItem.objects.get(user_id=pk)
+        except FavoriteItem.DoesNotExist:
             raise NotFound
 
-    def get(self, request, user_pk):
+    def get(self, request, pk):
         try:
             page = request.query_params.get("page", 1)
             page = int(page)
         except ValueError:
             page = 1
 
-        page_size = settings.FAVORITE_PRODUCT_PAGE_SIZE
+        page_size = settings.FAVORITE_ITEM_PAGE_SIZE
         start = (page - 1) * page_size
         end = page * page_size
 
-        favorite_product = self.get_object(user_pk)
-        products = favorite_product.products.all()  # 해당 사용자가 좋아하는 모든 Product 객체 가져오기
+        favorite_item = self.get_object(pk)
+        products = favorite_item.products.all()  # 해당 사용자가 좋아하는 모든 Product 객체 가져오기
 
         products_on_page = products[start:end]  # 페이지 범위에 해당하는 Product 객체 가져오기
 
@@ -55,12 +54,27 @@ class UserFavoriteProducts(APIView):
         )
         return Response(serializer.data)
 
+    def post(self, request):
+        user = request.user
+        serializer = TinyFavoriteItemSerializer(
+            user,
+            data=request.data,
+            partial=True,
+        )
+        if serializer.is_valid():
+            favorite_item = serializer.save()
 
-class FavoriteProductToggle(APIView):
-    # get user's favorite product
-    def get_favoriteProduct(self, user):
-        favorite_product, _ = FavoriteProduct.objects.get_or_create(user=user)
-        return favorite_product
+        pass
+
+    def delete(self, request):
+        pass
+
+
+class FavoriteItemToggle(APIView):
+    # get user's favorite Item
+    def get_favoriteItem(self, user):
+        favorite_item, created = FavoriteItem.objects.get_or_create(user=user)
+        return favorite_item
 
     def get_product(self, product_pk):
         try:
@@ -69,31 +83,37 @@ class FavoriteProductToggle(APIView):
             raise NotFound
 
     def put(self, request, product_pk):
-        favorite_product_list = self.get_favoriteProduct(request.user)
+        favorite_item_list = self.get_favoriteItem(request.user)
         product = self.get_product(product_pk)
-        if favorite_product_list.products.filter(pk=product_pk).exists():
-            favorite_product_list.products.remove(product)
+        if favorite_item_list.products.filter(pk=product_pk).exists():
+            favorite_item_list.products.remove(product)
         else:
-            favorite_product_list.products.add(product)
+            favorite_item_list.products.add(product)
         return Response(status=HTTP_200_OK)
 
 
-class UserFavoriteShops(APIView):
+class UserFavoritesShops(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_object(self, user_pk):
+    def get_object(self, pk):
         try:
-            return FavoriteShop.objects.get(user_id=user_pk)
+            return FavoriteShop.objects.get(user_id=pk)
         except FavoriteShop.DoesNotExist:
             raise NotFound
 
-    def get(self, request, user_pk):
-        favorite_shops = self.get_object(user_pk)
+    def get(self, request, pk):
+        favorite_shops = self.get_object(pk)
         serializer = FavoriteShopSerializer(
             favorite_shops,
             context={"request": request},
         )
         return Response(serializer.data)
+
+    def post(self, request):
+        pass
+
+    def delete(self, request):
+        pass
 
 
 class FavoriteShopToggle(APIView):
