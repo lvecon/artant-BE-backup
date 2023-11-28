@@ -1,23 +1,23 @@
 from rest_framework.serializers import ModelSerializer
-from .models import FavoriteItem, FavoriteShop
+from .models import FavoriteProduct, FavoriteShop
 from products.serializers import ProductListSerializer
 from shops.serializers import ShopSerializer
 
 
-class TinyFavoriteItemSerializer(ModelSerializer):
+class TinyFavoriteProductSerializer(ModelSerializer):
     class Meta:
-        model = FavoriteItem
+        model = FavoriteProduct
         fields = (
             "user",
             "products",
         )
 
 
-class FavoriteItemSerializer(ModelSerializer):
+class FavoriteProductSerializer(ModelSerializer):
     products = ProductListSerializer(many=True, read_only=True)
 
     class Meta:
-        model = FavoriteItem
+        model = FavoriteProduct
         fields = (
             "user",
             "products",

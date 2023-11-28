@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -26,14 +25,14 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AddField(
-            model_name="favoriteitem",
+            model_name="favoriteProduct",
             name="products",
             field=models.ManyToManyField(
                 related_name="favorites_item", to="products.product"
             ),
         ),
         migrations.AddField(
-            model_name="favoriteitem",
+            model_name="favoriteProduct",
             name="user",
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
