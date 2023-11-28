@@ -4,7 +4,7 @@ from products.serializers import ProductListSerializer
 from shops.serializers import ShopSerializer
 
 
-class TinyFavoriteItemSerializer(ModelSerializer):
+class TinyFavoriteProductSerializer(ModelSerializer):
     class Meta:
         model = FavoriteProduct
         fields = (
@@ -13,7 +13,7 @@ class TinyFavoriteItemSerializer(ModelSerializer):
         )
 
 
-class FavoriteItemSerializer(ModelSerializer):
+class FavoriteProductSerializer(ModelSerializer):
     products = ProductListSerializer(many=True, read_only=True)
 
     class Meta:

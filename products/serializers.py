@@ -431,7 +431,7 @@ class EditProductSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request:
             if request.user.is_authenticated:
-                return FavoriteItem.objects.filter(
+                return FavoriteProduct.objects.filter(
                     user=request.user,
                     products__pk=product.pk,
                 ).exists()

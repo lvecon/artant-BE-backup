@@ -5,16 +5,16 @@ from django.db import models
 class FavoriteProduct(models.Model):
     products = models.ManyToManyField(
         "products.Product",
-        related_name="favorites_item",
+        related_name="favorites_product",
     )
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
-        related_name="favorites_items",
+        related_name="favorites_products",
     )
 
     def __str__(self):
-        return f"{self.user}'s favorite items"
+        return f"{self.user}'s favorite products"
 
 
 class FavoriteShop(models.Model):

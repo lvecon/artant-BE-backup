@@ -4,10 +4,10 @@ from favorites.models import FavoriteShop, FavoriteProduct
 
 
 @admin.register(FavoriteProduct)
-class ReviewAdmin(admin.ModelAdmin):
+class FavoriteProductAdmin(admin.ModelAdmin):
     list_display = ("__str__",)
 
 
 @admin.register(FavoriteShop)
-class ReviewAdmin(admin.ModelAdmin):
+class FavoriteShopAdmin(admin.ModelAdmin):
     list_display = ("__str__",)
