@@ -22,25 +22,6 @@ from products.serializers import ProductListSerializer
 # Create your views here.
 
 
-class FavoritesItems(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request):
-        all_favorites_items = FavoriteItem.objects.all()
-        serializer = TinyFavoriteItemSerializer(
-            all_favorites_items,
-            many=True,
-            context={"request": request},
-        )
-        return Response(serializer.data)
-
-    def post(self, request):
-        pass
-
-    def delete(self, request):
-        pass
-
-
 class UserFavoritesItems(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -94,7 +75,6 @@ class FavoriteItemToggle(APIView):
     def get_favoriteItem(self, user):
         favorite_item, created = FavoriteItem.objects.get_or_create(user=user)
         return favorite_item
-   
 
     def get_product(self, product_pk):
         try:
@@ -110,25 +90,6 @@ class FavoriteItemToggle(APIView):
         else:
             favorite_item_list.products.add(product)
         return Response(status=HTTP_200_OK)
-
-
-class FavoritesShops(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request):
-        all_favorite_shops = FavoriteShop.objects.all()
-        serializer = TinyFavoriteShopSerializer(
-            all_favorite_shops,
-            many=True,
-            context={"request": request},
-        )
-        return Response(serializer.data)
-
-    def post(self, request):
-        pass
-
-    def delete(self, request):
-        pass
 
 
 class UserFavoritesShops(APIView):
