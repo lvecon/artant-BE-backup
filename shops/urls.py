@@ -5,6 +5,7 @@ from . import views
 # Create your views here.
 urlpatterns = [
     path("", views.Shops.as_view()),
+    path("banners", views.ShopBanners.as_view()),
     path("<int:pk>", views.ShopDetail.as_view()),
     path("<int:pk>/reviews", views.ShopReviews.as_view()),
     path("<int:pk>/reviews/images/<int:product_pk>", views.ReviewPhotos.as_view()),
