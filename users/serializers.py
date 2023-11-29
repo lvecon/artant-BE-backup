@@ -18,6 +18,8 @@ class PrivateUserSerializer(ModelSerializer):
     shop_pk = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
     shop_avatar = serializers.SerializerMethodField()
+    shop_is_activated = serializers.SerializerMethodField()
+    shop_register_step = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -26,6 +28,8 @@ class PrivateUserSerializer(ModelSerializer):
             "shop_pk",
             "shop_name",
             "shop_avatar",
+            "shop_is_activated",
+            "shop_register_step",
             "username",
             "avatar",
             "email",
@@ -47,6 +51,12 @@ class PrivateUserSerializer(ModelSerializer):
 
     def get_shop_avatar(self, user):
         return user.shop.avatar if hasattr(user, "shop") and user.shop else None
+
+    def get_shop_is_activated(self, user):
+        return user.shop.is_activated if hasattr(user, "shop") and user.shop else None
+
+    def get_shop_register_step(self, user):
+        return user.shop.register_step if hasattr(user, "shop") and user.shop else None
 
 
 class UserSerializer(serializers.ModelSerializer):

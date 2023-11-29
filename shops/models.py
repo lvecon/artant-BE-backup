@@ -10,9 +10,12 @@ class Shop(CommonModel):
     user = models.OneToOneField(
         "users.User", related_name="shop", on_delete=models.CASCADE
     )
+    is_activated = models.BooleanField(default=False)
+    register_step = models.IntegerField(default=1)
     avatar = models.URLField(blank=True, null=True)
     background_pic = models.URLField(blank=True, null=True)
     shop_name = models.CharField(max_length=256)
+    short_description = models.CharField(max_length=256, default="")
     description_title = models.CharField(max_length=256, blank=True, null=True)
     description = models.TextField(max_length=2000, blank=True, null=True)
     announcement = models.CharField(max_length=256, blank=True, null=True)

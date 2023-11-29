@@ -75,6 +75,7 @@ class ShopDetailSerializer(ModelSerializer):
             "background_pic",
             "announcement",
             "sections_info",
+            "short_description",
             "description_title",
             "description",
             "expiration",
@@ -117,6 +118,46 @@ class ShopCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
         fields = "__all__"
+
+
+class ShopUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = [
+            "is_activated",
+            "register_step",
+            "avatar",
+            "background_pic",
+            "shop_name",
+            "short_description",
+            "description_title",
+            "description",
+            "announcement",
+            "expiration",
+            "address",
+            "cancellation",
+            "shop_policy_updated_at",
+            "instagram_url",
+            "facebook_url",
+            "website_url",
+            "is_star_seller",
+            "image_1",
+            "image_2",
+            "image_3",
+            "image_4",
+            "image_5",
+        ]
+        extra_kwargs = {
+            "user": {"read_only": True},
+            "id": {"read_only": True},
+        }
+
+    def update(self, instance, validated_data):
+        # Update the Shop instance with the validated data
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 
 class SectionSerializer(serializers.ModelSerializer):
