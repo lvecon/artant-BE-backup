@@ -8,7 +8,7 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-from users.models import User
+
 from shops.models import Shop, Section
 from products.models import (
     Product,
@@ -20,18 +20,19 @@ from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
 from products.serializers import ProductListSerializer, ProductCreateSerializer
+from favorites.serializers import FavoriteShopSerializer
 
 
 # Index page의 상점 banner 정보
 class ShopBanners(APIView):
     def get(self, request):
+        # 현재, star seller, 최신순 정렬. 8개
         page_size = settings.SHOP_BANNER_PAGE_SIZE
-
         sorted_shops = Shop.objects.order_by("-is_star_seller", "-created_at")[
             0:page_size
         ]
 
-        serializer = serializers.FavoriteShopSerializer(sorted_shops, many=True)
+        serializer = serializers.ShopBannerSerializer(sorted_shops, many=True)
         return Response(serializer.data)
 
 
@@ -43,7 +44,7 @@ class Shops(APIView):
         except ValueError:
             page = 1
 
-        page_size = settings.ARTIST_PAGE_SIZE
+        page_size = settings.SHOP_ARTIST_PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
 
@@ -51,7 +52,7 @@ class Shops(APIView):
             start:end
         ]
 
-        serializer = serializers.FavoriteShopSerializer(sorted_shops, many=True)
+        serializer = FavoriteShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
 
     def post(self, request):

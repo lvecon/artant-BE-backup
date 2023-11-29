@@ -11,8 +11,7 @@ from products.models import Product
 from shops.models import Shop
 from .models import FavoriteProduct, FavoriteShop
 from django.conf import settings
-from products.serializers import ProductListSerializer
-from .serializers import FavoriteShopSerializer
+from .serializers import FavoriteProductSerializer, FavoriteShopSerializer
 
 # Create your views here.
 
@@ -43,7 +42,7 @@ class UserFavoritesProducts(APIView):
         products_on_page = products[start:end]  # 페이지 범위에 해당하는 Product 객체 가져오기
 
         serializer = (
-            ProductListSerializer(  # TODO: required fields 만 포함하는 serializer로 추후 수정
+            FavoriteProductSerializer(  # TODO: required fields 만 포함하는 serializer로 추후 수정
                 products_on_page,
                 many=True,
                 context={"request": request},
