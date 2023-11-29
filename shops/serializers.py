@@ -16,6 +16,17 @@ class ShopBannerSerializer(ModelSerializer):
         )
 
 
+# index page shop banner 정보
+class RecommendedShopSerializer(ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = (
+            "pk",
+            "avatar",
+            "shop_name",
+        )
+
+
 class ShopSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
 

@@ -26,13 +26,26 @@ from favorites.serializers import FavoriteShopSerializer
 # Index page의 상점 banner 정보
 class ShopBanners(APIView):
     def get(self, request):
-        # star seller, 최신순 정렬. 8개
+        # star seller, 최신순 정렬. 8개. TODO: 정렬 기준 논의. 현재 배경사진 있는 것만 필터링
         page_size = settings.SHOP_BANNER_PAGE_SIZE
         sorted_shops = Shop.objects.filter(background_pic__isnull=False).order_by(
             "-is_star_seller", "-created_at"
         )[0:page_size]
 
         serializer = serializers.ShopBannerSerializer(sorted_shops, many=True)
+        return Response(serializer.data)
+
+
+# Index page의 추천 판매자
+class FeaturedShops(APIView):
+    def get(self, request):
+        # star seller, 최신순 정렬. 4개. TODO: 정렬 기준 논의. 현재 avatar 있는 것만 필터링
+        page_size = settings.SHOP_ARTIST_PAGE_SIZE
+        sorted_shops = Shop.objects.filter(avatar__isnull=False).order_by(
+            "-is_star_seller", "-created_at"
+        )[0:page_size]
+
+        serializer = serializers.RecommendedShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
 
 
