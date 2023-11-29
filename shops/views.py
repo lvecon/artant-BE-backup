@@ -67,25 +67,6 @@ class RecommendedShops(APIView):
 
 
 class Shops(APIView):
-    # TODO: 현재 당신이 좋아할 것 같은 상점으로 사용중. 추후에 해당 뷰 구현하기
-    def get(self, request):
-        try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
-        except ValueError:
-            page = 1
-
-        page_size = settings.SHOP_ARTIST_PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
-
-        sorted_shops = Shop.objects.order_by("-is_star_seller", "-created_at")[
-            start:end
-        ]
-
-        serializer = FavoriteShopSerializer(sorted_shops, many=True)
-        return Response(serializer.data)
-
     def post(self, request):
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)  # 권한 확인
