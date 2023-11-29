@@ -1,13 +1,13 @@
 from django.contrib import admin
 
-from favorites.models import FavoriteShop, FavoriteItem
+from favorites.models import FavoriteShop, FavoriteProduct
 
 
-@admin.register(FavoriteItem)
-class ReviewAdmin(admin.ModelAdmin):
+@admin.register(FavoriteProduct)
+class FavoriteProductAdmin(admin.ModelAdmin):
     list_display = ("__str__",)
 
 
 @admin.register(FavoriteShop)
-class ReviewAdmin(admin.ModelAdmin):
+class FavoriteShopAdmin(admin.ModelAdmin):
     list_display = ("__str__",)

@@ -9,92 +9,53 @@ from rest_framework.exceptions import (
 )
 from products.models import Product
 from shops.models import Shop
-from .models import FavoriteItem, FavoriteShop
-from .serializer import (
-    FavoriteItemSerializer,
-    TinyFavoriteItemSerializer,
-    TinyFavoriteShopSerializer,
-    FavoriteShopSerializer,
-)
+from .models import FavoriteProduct, FavoriteShop
 from django.conf import settings
 from products.serializers import ProductListSerializer
+from shops.serializers import TinyShopSerializer
 
 # Create your views here.
 
 
-class FavoritesItems(APIView):
+# get specific user's favorite products
+class UserFavoritesProducts(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get(self, request):
-        all_favorites_items = FavoriteItem.objects.all()
-        serializer = TinyFavoriteItemSerializer(
-            all_favorites_items,
-            many=True,
-            context={"request": request},
-        )
-        return Response(serializer.data)
+    def get_object(self, user_pk):
+        favorite_product, _ = FavoriteProduct.objects.get_or_create(user_id=user_pk)
+        return favorite_product
 
-    def post(self, request):
-        pass
-
-    def delete(self, request):
-        pass
-
-
-class UserFavoritesItems(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_object(self, pk):
-        try:
-            return FavoriteItem.objects.get(user_id=pk)
-        except FavoriteItem.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk):
+    def get(self, request, user_pk):
+        # pagination
         try:
             page = request.query_params.get("page", 1)
             page = int(page)
         except ValueError:
             page = 1
 
-        page_size = settings.FAVORITE_ITEM_PAGE_SIZE
+        page_size = settings.FAVORITE_PRODUCT_PAGE_SIZE
         start = (page - 1) * page_size
         end = page * page_size
 
-        favorite_item = self.get_object(pk)
-        products = favorite_item.products.all()  # 해당 사용자가 좋아하는 모든 Product 객체 가져오기
-
+        # get favoriteProducts on page
+        favorite_product = self.get_object(user_pk)
+        products = favorite_product.products.all()  # 해당 사용자가 좋아하는 모든 Product 객체 가져오기
         products_on_page = products[start:end]  # 페이지 범위에 해당하는 Product 객체 가져오기
 
-        serializer = ProductListSerializer(  # ProductSerializer는 실제로 사용하는 Product Serializer로 바꿔야 합니다.
-            products_on_page,
-            many=True,
-            context={"request": request},
+        serializer = (
+            ProductListSerializer(  # TODO: required fields 만 포함하는 serializer로 추후 수정
+                products_on_page,
+                many=True,
+                context={"request": request},
+            )
         )
         return Response(serializer.data)
 
-    def post(self, request):
-        user = request.user
-        serializer = TinyFavoriteItemSerializer(
-            user,
-            data=request.data,
-            partial=True,
-        )
-        if serializer.is_valid():
-            favorite_item = serializer.save()
 
-        pass
-
-    def delete(self, request):
-        pass
-
-
-class FavoriteItemToggle(APIView):
-    # get user's favorite Item
-    def get_favoriteItem(self, user):
-        favorite_item, created = FavoriteItem.objects.get_or_create(user=user)
-        return favorite_item
-   
+class FavoriteProductToggle(APIView):
+    def get_favoriteProduct(self, user):
+        favorite_product, _ = FavoriteProduct.objects.get_or_create(user=user)
+        return favorite_product
 
     def get_product(self, product_pk):
         try:
@@ -103,64 +64,57 @@ class FavoriteItemToggle(APIView):
             raise NotFound
 
     def put(self, request, product_pk):
-        favorite_item_list = self.get_favoriteItem(request.user)
+        favorite_product = self.get_favoriteProduct(request.user)
         product = self.get_product(product_pk)
-        if favorite_item_list.products.filter(pk=product_pk).exists():
-            favorite_item_list.products.remove(product)
+        if favorite_product.products.filter(pk=product_pk).exists():
+            favorite_product.products.remove(product)
+            response_message = {"message": "Product removed from favorites."}
         else:
-            favorite_item_list.products.add(product)
-        return Response(status=HTTP_200_OK)
+            favorite_product.products.add(product)
+            response_message = {"message": "Product added to favorites."}
+
+        return Response(response_message, status=HTTP_200_OK)
 
 
-class FavoritesShops(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request):
-        all_favorite_shops = FavoriteShop.objects.all()
-        serializer = TinyFavoriteShopSerializer(
-            all_favorite_shops,
-            many=True,
-            context={"request": request},
-        )
-        return Response(serializer.data)
-
-    def post(self, request):
-        pass
-
-    def delete(self, request):
-        pass
-
-
+# Get specific user's favorite shops
 class UserFavoritesShops(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_object(self, pk):
-        try:
-            return FavoriteShop.objects.get(user_id=pk)
-        except FavoriteShop.DoesNotExist:
-            raise NotFound
+    def get_object(self, user_pk):
+        favorite_shop, _ = FavoriteShop.objects.get_or_create(user_id=user_pk)
+        return favorite_shop
 
-    def get(self, request, pk):
-        favorite_shops = self.get_object(pk)
-        serializer = FavoriteShopSerializer(
-            favorite_shops,
-            context={"request": request},
+    def get(self, request, user_pk):
+        # pagination
+        try:
+            page = request.query_params.get("page", 1)
+            page = int(page)
+        except ValueError:
+            page = 1
+
+        page_size = settings.FAVORITE_SHOP_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = page * page_size
+
+        # get favoriteShops on page
+        favorite_shop = self.get_object(user_pk)
+        shops = favorite_shop.shops.all()  # 해당 사용자가 좋아하는 모든 Shop 객체 가져오기
+        shops_on_page = shops[start:end]  # 페이지 범위에 해당하는 Shop 객체 가져오기
+
+        serializer = (
+            TinyShopSerializer(  # TODO: required fields 만 포함하는 serializer로 추후 수정
+                shops_on_page,
+                many=True,
+                context={"request": request},
+            )
         )
         return Response(serializer.data)
 
-    def post(self, request):
-        pass
-
-    def delete(self, request):
-        pass
-
 
 class FavoriteShopToggle(APIView):
-    def get_favoriteShops(self, user):
-        try:
-            return FavoriteShop.objects.get(user=user)
-        except FavoriteShop.DoesNotExist:
-            raise NotFound
+    def get_favoriteShop(self, user):
+        favorite_shop, _ = FavoriteShop.objects.get_or_create(user=user)
+        return favorite_shop
 
     def get_shop(self, shop_pk):
         try:
@@ -169,10 +123,13 @@ class FavoriteShopToggle(APIView):
             raise NotFound
 
     def put(self, request, shop_pk):
-        favorite_shop_list = self.get_favoriteShops(request.user)
-        shop = self.get_shop(shop_pk)
-        if favorite_shop_list.shops.filter(pk=shop_pk).exists():
-            favorite_shop_list.shops.remove(shop)
+        favorite_shop = self.get_favoriteShop(request.user)
+        product = self.get_shop(shop_pk)
+        if favorite_shop.shops.filter(pk=shop_pk).exists():
+            favorite_shop.shops.remove(product)
+            response_message = {"message": "Shop removed from favorites."}
         else:
-            favorite_shop_list.shops.add(shop)
-        return Response(status=HTTP_200_OK)
+            favorite_shop.shops.add(product)
+            response_message = {"message": "Shop added to favorites."}
+
+        return Response(response_message, status=HTTP_200_OK)

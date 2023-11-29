@@ -1,7 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 
-from favorites.models import FavoriteItem
+from favorites.models import FavoriteProduct
 from .models import (
     Product,
     ProductImage,
@@ -138,7 +138,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request:
             if request.user.is_authenticated:
-                return FavoriteItem.objects.filter(
+                return FavoriteProduct.objects.filter(
                     user=request.user,
                     products__pk=product.pk,
                 ).exists()
@@ -277,7 +277,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
         if request:
             if request.user.is_authenticated:
-                return FavoriteItem.objects.filter(
+                return FavoriteProduct.objects.filter(
                     user=request.user,
                     products__pk=product.pk,  # 이 부분을 수정하여 products 필드의 pk를 확인합니다.
                 ).exists()
@@ -431,7 +431,7 @@ class EditProductSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request:
             if request.user.is_authenticated:
-                return FavoriteItem.objects.filter(
+                return FavoriteProduct.objects.filter(
                     user=request.user,
                     products__pk=product.pk,
                 ).exists()
