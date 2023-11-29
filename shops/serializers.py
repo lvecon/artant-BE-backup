@@ -17,7 +17,7 @@ class ShopBannerSerializer(ModelSerializer):
 
 
 # index page shop banner 정보
-class RecommendedShopSerializer(ModelSerializer):
+class FeaturedShopSerializer(ModelSerializer):
     class Meta:
         model = Shop
         fields = (

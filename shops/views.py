@@ -1,4 +1,5 @@
 from time import sleep
+from django.db.models import Count
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.response import Response
@@ -36,20 +37,37 @@ class ShopBanners(APIView):
         return Response(serializer.data)
 
 
-# Index page의 추천 판매자
+# Index page의 artant측 추천 판매자
 class FeaturedShops(APIView):
     def get(self, request):
         # star seller, 최신순 정렬. 4개. TODO: 정렬 기준 논의. 현재 avatar 있는 것만 필터링
-        page_size = settings.SHOP_ARTIST_PAGE_SIZE
+        page_size = settings.FEATURED_SHOP_PAGE_SIZE
         sorted_shops = Shop.objects.filter(avatar__isnull=False).order_by(
             "-is_star_seller", "-created_at"
         )[0:page_size]
 
-        serializer = serializers.RecommendedShopSerializer(sorted_shops, many=True)
+        serializer = serializers.FeaturedShopSerializer(sorted_shops, many=True)
+        return Response(serializer.data)
+
+
+# Profile page. 당신이 좋아할 것 같은 상점. TODO: 추천 로직 추가
+class RecommendedShops(APIView):
+    def get(self, request):
+        page_size = settings.RECOMMENDED_SHOP_PAGE_SIZE
+        sorted_shops = (
+            Shop.objects.annotate(product_count=Count("products"))  # 상점별 상품 개수를 계산합니다.
+            .filter(
+                avatar__isnull=False, product_count__gt=0
+            )  # avatar가 있고, 상품 개수가 0보다 큰 상점 필터링
+            .order_by("-is_star_seller", "-created_at")[:page_size]
+        )
+
+        serializer = FavoriteShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
 
 
 class Shops(APIView):
+    # TODO: 현재 당신이 좋아할 것 같은 상점으로 사용중. 추후에 해당 뷰 구현하기
     def get(self, request):
         try:
             page = request.query_params.get("page", 1)  # ( ,default value)
