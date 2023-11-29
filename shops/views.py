@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ParseError, NotFound
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
@@ -50,7 +50,7 @@ class FeaturedShops(APIView):
         return Response(serializer.data)
 
 
-# Profile page. 당신이 좋아할 것 같은 상점. TODO: 추천 로직 추가
+# Profile page. 당신이 좋아할 것 같은 상점. TODO: 추천 로직 추가. permission class 설정.
 class RecommendedShops(APIView):
     def get(self, request):
         page_size = settings.RECOMMENDED_SHOP_PAGE_SIZE
@@ -67,10 +67,9 @@ class RecommendedShops(APIView):
 
 
 class Shops(APIView):
-    def post(self, request):
-        self.permission_classes = [IsAuthenticated]
-        self.check_permissions(request)  # 권한 확인
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
         # user의 상점 소유 여부 확인
         if hasattr(request.user, "shop"):
             return Response(
@@ -80,15 +79,8 @@ class Shops(APIView):
 
         data = request.data.copy()
         data["user"] = request.user.id  # 현재 사용자를 상점 소유자로 설정
-
-        if "register_step" in data:
-            # Existing shop, update step
-            shop = request.user.shop
-            serializer = serializers.ShopCreateSerializer(shop, data=data)
-        else:
-            # New shop creation
-            data["register_step"] = 1  # Starting from step 1
-            serializer = serializers.ShopCreateSerializer(data=data)
+        data["register_step"] = data.get("register_step", 1)
+        serializer = serializers.ShopCreateSerializer(data=data)
 
         if serializer.is_valid():
             serializer.save()
@@ -96,56 +88,10 @@ class Shops(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request):
-        self.permission_classes = [IsAuthenticated]
-        self.check_permissions(request)
-
-        try:
-            shop = Shop.objects.get(id=request.data["id"], user=request.user)
-        except Shop.DoesNotExist:
-            return Response(
-                {"error": "Shop not found or not owned by user."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        data = request.data.copy()
-        data[
-            "user"
-        ] = request.user.id  # Ensure the shop is still owned by the request user
-        data["shop_name"] = shop.shop_name
-        serializer = serializers.ShopUpdateSerializer(shop, data=data)
-        print(serializer.is_valid())
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            print(serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# TODO: Update 전용 serializer 생성. shop model 이미지 필드들 따로 모델 만들어서 구현하기!
-class ShopUpdate(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def put(self, request, pk):
-        try:
-            shop = Shop.objects.get(pk=pk, user=request.user)
-        except Shop.DoesNotExist:
-            return Response(
-                {
-                    "error": "Shop not found or you do not have permission to edit this shop."
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        serializer = serializers.ShopSerializer(shop, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ShopDetail(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get_object(self, pk):
         try:
             return Shop.objects.get(pk=pk)
@@ -160,6 +106,29 @@ class ShopDetail(APIView):
             context={"reqeust": request},
         )
         return Response(serializer.data)
+
+    def put(self, request, pk):
+        try:
+            shop = request.user.shop
+            if shop.id != pk:
+                raise Shop.DoesNotExist
+        except Shop.DoesNotExist:
+            return Response(
+                {"error": "Shop not found or not owned by user."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = serializers.ShopUpdateSerializer(shop, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        shop = self.get_object(pk, request.user)
+        shop.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ShopReviews(APIView):
