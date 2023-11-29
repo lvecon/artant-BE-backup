@@ -55,11 +55,44 @@ class Shops(APIView):
         data = request.data.copy()
         data["user"] = request.user.id  # 현재 사용자를 상점 소유자로 설정
 
-        serializer = serializers.ShopCreateSerializer(data=data)
+        if "register_step" in data:
+            # Existing shop, update step
+            shop = request.user.shop
+            serializer = serializers.ShopCreateSerializer(shop, data=data)
+        else:
+            # New shop creation
+            data["register_step"] = 1  # Starting from step 1
+            serializer = serializers.ShopCreateSerializer(data=data)
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+
+        try:
+            shop = Shop.objects.get(id=request.data["id"], user=request.user)
+        except Shop.DoesNotExist:
+            return Response(
+                {"error": "Shop not found or not owned by user."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        data = request.data.copy()
+        data[
+            "user"
+        ] = request.user.id  # Ensure the shop is still owned by the request user
+        data["shop_name"] = shop.shop_name
+        serializer = serializers.ShopUpdateSerializer(shop, data=data)
+        print(serializer.is_valid())
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            print(serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
