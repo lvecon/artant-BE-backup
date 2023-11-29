@@ -22,6 +22,19 @@ from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
 from products.serializers import ProductListSerializer, ProductCreateSerializer
 
 
+# Index page의 상점 banner 정보
+class ShopBanners(APIView):
+    def get(self, request):
+        page_size = settings.SHOP_BANNER_PAGE_SIZE
+
+        sorted_shops = Shop.objects.order_by("-is_star_seller", "-created_at")[
+            0:page_size
+        ]
+
+        serializer = serializers.FavoriteShopSerializer(sorted_shops, many=True)
+        return Response(serializer.data)
+
+
 class Shops(APIView):
     def get(self, request):
         try:
@@ -38,7 +51,7 @@ class Shops(APIView):
             start:end
         ]
 
-        serializer = serializers.TinyShopSerializer(sorted_shops, many=True)
+        serializer = serializers.FavoriteShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
 
     def post(self, request):
