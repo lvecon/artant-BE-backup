@@ -41,7 +41,7 @@ class Shop(CommonModel):
 
 
 # TODO: shop, order 에 unique_together 옵션 추가할지 의논
-class Section(models.Model):
+class Section(CommonModel):
     title = models.CharField(max_length=64)
     shop = models.ForeignKey(
         "Shop",
