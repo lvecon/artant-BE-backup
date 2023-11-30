@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from common.views import GetUploadURL, GetVideoUploadURL
 
 
 urlpatterns = [
@@ -15,7 +16,7 @@ urlpatterns = [
     path("<int:pk>/photos", views.ProductImages.as_view()),
     path("<int:pk>/videos", views.ProductVideos.as_view()),
     path("photos/<int:pk>", views.PhotoDetail.as_view()),
-    path("photos/get-url", views.GetUploadURL.as_view()),
-    path("videos/get-url", views.GetVideoUploadURL.as_view()),
+    path("photos/get-url", GetUploadURL.as_view()),
+    path("videos/get-url", GetVideoUploadURL.as_view()),
     path("edit-product/<int:product_pk>", views.EditProduct.as_view()),
 ]
