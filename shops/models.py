@@ -40,7 +40,7 @@ class Shop(CommonModel):
         return self.shop_name
 
 
-# TODO: shop, order 에 unique_together 옵션 추가할지 의논
+# TODO: shop, order 에 unique_together 옵션 추가할지 의논 / Common model을 쓸 필요성
 class Section(CommonModel):
     title = models.CharField(max_length=64)
     shop = models.ForeignKey(
