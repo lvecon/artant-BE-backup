@@ -471,3 +471,9 @@ class EditProductSerializer(serializers.ModelSerializer):
         ).count()
 
         return count_in_carts
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ["image", "order"]

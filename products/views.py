@@ -398,10 +398,6 @@ class PhotoDetail(APIView):
 
     def delete(self, request, pk):
         photo = self.get_object(pk)
-        # if (photo.product and photo.product.owner != request.user) or (
-        #     photo.experience and photo.experience.host != request.user
-        # ):
-        #     raise PermissionDenied
         photo.delete()
         return Response(status=HTTP_200_OK)
 
@@ -409,24 +405,28 @@ class PhotoDetail(APIView):
 class ProductImages(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_object(self, pk):
+    def get_product(self, pk):
         try:
             return Product.objects.get(pk=pk)
         except Product.DoesNotExist:
-            raise NotFound
+            raise NotFound("Product not found")
 
     def post(self, request, pk):
-        product = self.get_object(pk)
+        product = self.get_product(pk)
 
-        # if request.user != room.owner:
-        #     raise PermissionDenied
-        serializer = serializers.PhotoSerializer(data=request.data)
+        # 상품 소유권 확인
+        if hasattr(request.user, "shop") and request.user.shop != product.shop:
+            raise PermissionDenied(
+                "You do not have permission to add images to this product"
+            )
+
+        # 이미지 추가
+        serializer = serializers.ProductImageSerializer(data=request.data)
         if serializer.is_valid():
-            photo = serializer.save(product=product)  # connect to room
-            serializer = serializers.PhotoSerializer(photo)
-            return Response(serializer.data)
+            serializer.save(product=product)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProductVideos(APIView):
