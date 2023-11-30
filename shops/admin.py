@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Shop, Section
+from .models import Shop, Section, ShopImage, ShopVideo
 
 # Register your models here.
 
@@ -20,3 +20,13 @@ class SectionAdmin(admin.ModelAdmin):
         "shop",
         "title",
     )
+
+
+@admin.register(ShopImage)
+class ShopImageAdmin(admin.ModelAdmin):
+    list_display = ("__str__",)
+
+
+@admin.register(ShopVideo)
+class ShopVideoAdmin(admin.ModelAdmin):
+    list_display = ("__str__",)

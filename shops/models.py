@@ -56,3 +56,27 @@ class Section(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ShopImage(CommonModel):
+    image = models.URLField()
+    shop = models.ForeignKey(
+        "Shop",
+        on_delete=models.CASCADE,
+        related_name="images",
+    )
+
+    def __str__(self):
+        return f"{self.shop}"
+
+
+class ShopVideo(CommonModel):
+    video = models.URLField()
+    shop = models.OneToOneField(
+        "Shop",
+        on_delete=models.CASCADE,
+        related_name="video",
+    )
+
+    def __str__(self):
+        return f"{self.shop}"

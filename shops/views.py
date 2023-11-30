@@ -77,7 +77,7 @@ class Shops(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        data = request.data.copy()
+        data = request.data
         data["user"] = request.user.id  # 현재 사용자를 상점 소유자로 설정
         data["register_step"] = data.get("register_step", 1)
         serializer = serializers.ShopCreateSerializer(data=data)
