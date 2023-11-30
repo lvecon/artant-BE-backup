@@ -45,14 +45,15 @@ class Shop(CommonModel):
         return self.shop_name
 
 
+# TODO: shop, order 에 unique_together 옵션 추가할지 의논
 class Section(models.Model):
     title = models.CharField(max_length=64)
-    order = models.PositiveIntegerField(null=True)
     shop = models.ForeignKey(
         "Shop",
         on_delete=models.CASCADE,
         related_name="sections",
     )
+    order = models.PositiveIntegerField()
 
     def __str__(self):
         return self.title
@@ -65,7 +66,7 @@ class ShopImage(CommonModel):
         on_delete=models.CASCADE,
         related_name="images",
     )
-    order = models.PositiveIntegerField(null=True)
+    order = models.PositiveIntegerField()
 
     def __str__(self):
         return f"{self.shop}"

@@ -16,7 +16,7 @@ class ShopBannerSerializer(ModelSerializer):
         )
 
 
-# index page shop banner 정보
+# index page 추천 판매자 정보
 class FeaturedShopSerializer(ModelSerializer):
     class Meta:
         model = Shop
@@ -54,7 +54,7 @@ class ShopSerializer(ModelSerializer):
 
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
-    image_urls = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     sections_info = serializers.SerializerMethodField()
     user = TinyUserSerializer(read_only=True)
 
@@ -76,7 +76,7 @@ class ShopDetailSerializer(ModelSerializer):
             "shop_policy_updated_at",
             "is_liked",
             "is_star_seller",
-            "image_urls",
+            "images",
         )
 
     def get_is_liked(self, shop):
@@ -89,12 +89,9 @@ class ShopDetailSerializer(ModelSerializer):
                 ).exists()
         return False
 
-    def get_image_urls(self, shop):
-        image_fields = ["image_1", "image_2", "image_3", "image_4", "image_5"]
-        image_urls = [
-            getattr(shop, field) for field in image_fields if getattr(shop, field)
-        ]
-        return image_urls
+    def get_images(self, shop):
+        images = shop.images.order_by("order").values_list("image", flat=True)
+        return list(images)
 
     def get_sections_info(self, shop):
         sections = Section.objects.filter(shop=shop)
