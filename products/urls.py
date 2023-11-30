@@ -12,9 +12,9 @@ urlpatterns = [
         "<int:pk>/reviews/<int:review_pk>/reply",
         views.ProductReviewReply.as_view(),
     ),
-    path("<int:product_pk>/reviews/photos", views.ReviewPhotoList.as_view()),
-    path("<int:pk>/photos", views.ProductImages.as_view()),
+    path("<int:product_pk>/reviews/images", views.ReviewPhotoList.as_view()),
+    path("<int:pk>/images", views.ProductImages.as_view()),
     path("<int:pk>/videos", views.ProductVideos.as_view()),
-    path("photos/<int:pk>", views.PhotoDetail.as_view()),
+    path("images/<int:pk>", views.PhotoDetail.as_view()),
     path("edit-product/<int:product_pk>", views.EditProduct.as_view()),
 ]
