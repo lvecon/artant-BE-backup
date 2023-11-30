@@ -159,7 +159,7 @@ class Products(APIView):
             return Response(response_data)
 
 
-class ProductDetails(APIView):
+class ProductDetail(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def user_viewed(self, timestamp, product):
