@@ -387,7 +387,7 @@ class ProductReviewReply(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PhotoDetail(APIView):
+class ProductImageDetail(APIView):
     permission_classes = [IsAuthenticated]  # check user authenticated
 
     def get_object(self, pk):
@@ -399,7 +399,7 @@ class PhotoDetail(APIView):
     def delete(self, request, pk):
         photo = self.get_object(pk)
         photo.delete()
-        return Response(status=HTTP_200_OK)
+        return Response({"message": "ProductImage deleted"}, status=HTTP_200_OK)
 
 
 class ProductImages(APIView):
