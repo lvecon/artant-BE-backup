@@ -353,7 +353,6 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "processing_min",
             "processing_max",
             "shipping_price",
-            "thumbnail",
             "is_personalization_enabled",
             "is_personalization_optional",
             "personalization_guide",

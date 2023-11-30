@@ -11,10 +11,7 @@ from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
 from shops.models import Shop, Section
-from products.models import (
-    Product,
-    Color,
-)
+from products.models import Product, Color, ProductImage
 from product_attributes.models import Category, Material, ProductTag
 from product_variants.models import ProductVariant, Variation, VariationOption
 from reviews.models import Review
@@ -399,6 +396,22 @@ class CreateProduct(APIView):
             for tag_name in tags_data:
                 tag, created = ProductTag.objects.get_or_create(tag=tag_name)
                 product.tags.add(tag)
+
+            # 이미지 처리
+            thumbnail_url = None
+            images_data = request.data.get("images", [])
+            for image_data in images_data:
+                image_obj = ProductImage.objects.create(
+                    product=product,
+                    image=image_data.get("image"),
+                    order=image_data.get("order"),
+                )
+                if image_obj.order == 1:
+                    thumbnail_url = image_obj.image
+
+            if thumbnail_url:
+                product.thumbnail = thumbnail_url
+                product.save()
 
             product.category.add(category.id)
             if primary_color:
