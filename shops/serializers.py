@@ -113,6 +113,7 @@ class ShopCreateSerializer(serializers.ModelSerializer):
 class ShopUpdateSerializer(serializers.ModelSerializer):
     sections_info = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    video = serializers.SerializerMethodField()
 
     class Meta:
         model = Shop
@@ -128,6 +129,7 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             "announcement",
             "sections_info",
             "images",
+            "video",
             "expiration",
             "address",
             "cancellation",
@@ -165,6 +167,9 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
     def get_images(self, shop):
         images = shop.images.order_by("order").values_list("image", flat=True)
         return list(images)
+    
+    def get_video(self, shop):
+        return shop.video.video
 
 
 

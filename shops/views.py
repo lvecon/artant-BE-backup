@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
-from shops.models import Shop, Section, ShopImage
+from shops.models import Shop, Section, ShopImage, ShopVideo
 from products.models import Product, Color, ProductImage
 from product_attributes.models import Category, Material, ProductTag
 from product_variants.models import ProductVariant, Variation, VariationOption
@@ -126,9 +126,24 @@ class ShopDetail(APIView):
             #섹션 정보 업데이트 (sections 키가 있는 경우에만)
             if sections_data is not None:
                 self.update_sections(sections_data, shop)
-
+            # 이미지 정보 업데이트 (images 키가 있는 경우에만)
             if images_data is not None:
                 self.update_images(images_data, shop)
+
+            # 비디오 정보 업데이트
+            video_url = request.data.get('video')
+            if video_url is not None:
+                if hasattr(shop, 'video'):
+                    # 기존 비디오 업데이트
+                    shop.video.video = video_url
+                    shop.video.save()
+                else:
+                    # 새 비디오 생성
+                    ShopVideo.objects.create(video=video_url, shop=shop)
+            else:
+                # 요청에 비디오 URL이 없는 경우, 기존 비디오 삭제
+                if hasattr(shop, 'video'):
+                    shop.video.delete()
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

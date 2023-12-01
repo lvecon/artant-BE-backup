@@ -24,9 +24,9 @@ class SectionAdmin(admin.ModelAdmin):
 
 @admin.register(ShopImage)
 class ShopImageAdmin(admin.ModelAdmin):
-    list_display = ("__str__",)
+    list_display = ("id", "__str__",)
 
 
 @admin.register(ShopVideo)
 class ShopVideoAdmin(admin.ModelAdmin):
-    list_display = ("__str__",)
+    list_display = ("id", "__str__",)
