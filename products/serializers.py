@@ -321,7 +321,7 @@ class TinyProductSerializer(serializers.ModelSerializer):
         else:
             return 0
 
-
+# 유효성 검사 더 구체적으로 가능하게 하기
 class ProductCreateSerializer(serializers.ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()

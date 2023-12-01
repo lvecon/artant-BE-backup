@@ -111,6 +111,8 @@ class ShopCreateSerializer(serializers.ModelSerializer):
 
 
 class ShopUpdateSerializer(serializers.ModelSerializer):
+    sections_info = serializers.SerializerMethodField()
+
     class Meta:
         model = Shop
         fields = [
@@ -123,6 +125,7 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             "description_title",
             "description",
             "announcement",
+            "sections_info",
             "expiration",
             "address",
             "cancellation",
@@ -144,9 +147,23 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+    
+    def get_sections_info(self, shop):
+        sections = Section.objects.filter(shop=shop).order_by('order')
+        return [
+            {   
+                "id": section.pk,
+                "title": section.title,
+                "order" : section.order,
+                "product_count": shop.products.filter(section=section).count(),
+            }
+            for section in sections
+        ]
+
 
 
 class SectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Section
-        fields = ["id", "title", "rank", "shop"]
+        fields = ["id", "title", "order"]
+ 

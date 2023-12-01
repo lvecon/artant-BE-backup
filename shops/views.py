@@ -109,9 +109,23 @@ class ShopDetail(APIView):
         if shop.user != request.user:
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
+        sections_data = request.data.get('sections')
+        if sections_data:
+            # 섹션의 title 중복 확인
+            titles = [section.get('title') for section in sections_data]
+            if len(titles) != len(set(titles)):
+                return Response(
+                    {"error": "Duplicate section titles found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = serializers.ShopUpdateSerializer(shop, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            #섹션 정보 업데이트 (sections 키가 있는 경우에만)
+            if sections_data is not None:
+                self.update_sections(sections_data, shop)
+
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -120,6 +134,29 @@ class ShopDetail(APIView):
         shop.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+    def update_sections(self, sections_data, shop):
+        existing_sections = set(shop.sections.all())
+        updated_sections = set()
+
+        for section_data in sections_data:
+            section_title = section_data.get("title")
+            existing_section = shop.sections.filter(title=section_title).first()
+            if existing_section:
+                # 기존 섹션 업데이트
+               for key, value in section_data.items():
+                setattr(existing_section, key, value)
+                existing_section.save()
+                updated_sections.add(existing_section)
+            else:
+                # 새 섹션 추가
+                new_section = Section.objects.create(**section_data, shop=shop)
+                updated_sections.add(new_section)
+
+        # 삭제되어야 하는 섹션 찾기 및 삭제. TODO: 삭제 허용에 대해 의논. 기존에 연결된 상품 어떻게 할지?
+        for section in existing_sections - updated_sections:
+            section.delete()
 
 
 class ShopReviews(APIView):
@@ -437,22 +474,18 @@ class CreateSection(APIView):
                 {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
             )
 
-        section_title = request.data.get("section")
-        if not section_title:
-            return Response(
-                {"error": "Section title is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = serializers.SectionSerializer(data=request.data)
+        if serializer.is_valid():
+            # 동일한 제목의 섹션이 이미 있는지 확인
+            if Section.objects.filter(shop_id=shop_pk, title=serializer.validated_data["title"]).exists():
+                return Response(
+                    {"error": "A section with this title already exists."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        # 동일한 제목의 섹션이 이미 있는지 확인
-        if Section.objects.filter(shop_id=shop_pk, title=section_title).exists():
-            return Response(
-                {"error": "A section with this title already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            # 새 섹션 생성
+            section = serializer.save(shop_id=shop_pk)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # 새 섹션 생성
-        section = Section.objects.create(title=section_title, shop_id=shop_pk)
-
-        serializer = serializers.SectionSerializer(section)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
