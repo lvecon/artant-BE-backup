@@ -199,8 +199,8 @@ class ShopProducts(APIView):
         except Shop.DoesNotExist:
             raise NotFound
 
-    def get(self, request, pk):
-        shop = self.get_object(pk)
+    def get(self, request, shop_pk):
+        shop = self.get_object(shop_pk)
         products = shop.products.all()
 
         # 섹션 제목 기반 필터링
@@ -233,6 +233,146 @@ class ShopProducts(APIView):
         }
 
         return Response(response_data)
+    
+    def post(self, request, shop_pk):
+        user = request.user
+        # 사용자의 상점과 요청된 상점 ID가 일치하는지 확인
+        if not user.shop.pk == shop_pk:
+            return Response(
+                {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+      
+        data = request.data.copy()
+        data["shop"] = shop_pk
+        # 섹션 처리
+        self.set_section(data, shop_pk)
+        serializer = ProductCreateSerializer(data=data)
+        if serializer.is_valid():
+            # 카테고리 이름으로 카테고리 객체를 가져옴, 없으면 404 응답
+            category_name = request.data.get("category_name")
+            category = get_object_or_404(Category, name=category_name)
+
+            # 색상 처리
+            primary_color, secondary_color = self.get_colors(request)
+
+            # 상품 저장
+            product = serializer.save()
+            
+            # Variation 처리
+            self.create_variations(
+                variations_data=request.data.get("variations", []), product=product
+            )
+            self.create_variants(
+                variants_data=request.data.get("variants", []), product=product
+            )
+            self.set_materials_and_tags(materials_data=request.data.get("materials", []),
+                                        tags_data=request.data.get("tags", []), product=product)
+            self.process_images(images_data=request.data.get("images", []), product=product)
+
+            product.category.add(category.id)
+            if primary_color:
+                product.primary_color = primary_color
+            if secondary_color:
+                product.secondary_color = secondary_color
+            product.save()
+
+            if category.parent:
+                product.category.add(category.parent.id)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # primary color, secondary color 처리
+    def get_colors(self, request):
+        primary_color_name = request.data.get("primary_color")
+        secondary_color_name = request.data.get("secondary_color")
+
+        try:
+            primary_color = (
+                Color.objects.get(name=primary_color_name)
+                if primary_color_name
+                else None
+            )
+            secondary_color = (
+                Color.objects.get(name=secondary_color_name)
+                if secondary_color_name
+                else None
+            )
+        except Color.DoesNotExist:
+            raise serializers.ValidationError({"color": "Invalid color name"})
+
+        return primary_color, secondary_color
+
+    def set_section(self, data, shop_pk):
+        section_title = data.get("section")
+        if section_title:
+            section, _ = Section.objects.get_or_create(
+                title=section_title, shop_id=shop_pk
+            )
+            data["section"] = section.pk
+
+    def create_variations(self, variations_data, product):
+        for variation_data in variations_data:
+            variation = Variation.objects.create(
+                name=variation_data["name"],
+                product=product,
+                is_sku_vary=variation_data["is_sku_vary"],
+                is_price_vary=variation_data.get("is_price_vary", False),
+                is_quantity_vary=variation_data.get("is_quantity_vary", False),
+            )
+            for option_data in variation_data.get("options", []):
+                VariationOption.objects.create(
+                    name=option_data["name"], variation=variation
+                )
+
+    def create_variants(self, variants_data, product):
+        for variant_data in variants_data:
+            option_one, option_two = self.get_variant_options(variant_data, product)
+            ProductVariant.objects.create(
+                product=product,
+                option_one=option_one,
+                option_two=option_two,
+                sku=variant_data.get("sku", ""),
+                price=variant_data.get("price", 0),
+                quantity=variant_data.get("quantity", 0),
+                is_visible=variant_data.get("is_visible", True),
+            )
+
+    def get_variant_options(self, variant_data, product):
+        option_one = self.get_option(variant_data.get("option_one"), product)
+        option_two = self.get_option(variant_data.get("option_two"), product)
+        return option_one, option_two
+
+    def get_option(self, option_name, product):
+        if option_name:
+            return VariationOption.objects.filter(
+                name=option_name,
+                variation__product=product,
+            ).first()
+    def set_materials_and_tags(self, materials_data, tags_data, product):
+        for material_name in materials_data:
+            material, _ = Material.objects.get_or_create(name=material_name)
+            product.materials.add(material)
+        for tag_name in tags_data:
+            tag, _ = ProductTag.objects.get_or_create(tag=tag_name)
+            product.tags.add(tag)
+
+    def process_images(self, images_data, product):
+        thumbnail_url = None
+        for image_data in images_data:
+            image_obj = ProductImage.objects.create(
+                product=product,
+                image=image_data.get("image"),
+                order=image_data.get("order"),
+            )
+            if image_obj.order == 1:
+                thumbnail_url = image_obj.image
+
+        if thumbnail_url:
+            product.thumbnail = thumbnail_url
+            product.save()
 
 
 class ReviewPhotos(APIView):
@@ -287,146 +427,9 @@ class ReviewPhotos(APIView):
         return Response(response_data)
 
 
-class CreateProduct(APIView):
-    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
 
-    def post(self, request, shop_pk):
-        user = request.user
-        # 사용자의 상점과 요청된 상점 ID가 일치하는지 확인
-        if not user.shop.pk == shop_pk:
-            return Response(
-                {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
-            )
 
-        category_name = request.data.get("category_name")
-        # 카테고리 이름으로 카테고리 객체를 가져옴, 없으면 404 응답
-        category = get_object_or_404(Category, name=category_name)
-
-        # 요청 데이터에서 primary_color와 secondary_color 값을 가져옵니다.
-        primary_color_name = request.data.get("primary_color")
-        secondary_color_name = request.data.get("secondary_color")
-
-        # 색상 객체들을 검색합니다. 색상이 없으면 None을 반환합니다.
-        primary_color = Color.objects.filter(name=primary_color_name).first()
-        secondary_color = Color.objects.filter(name=secondary_color_name).first()
-
-        if primary_color_name and not primary_color:
-            return Response(
-                {"primary_color": "Invalid primary color"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if secondary_color_name and not secondary_color:
-            return Response(
-                {"secondary_color": "Invalid secondary color"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        data = request.data.copy()
-        data["shop"] = shop_pk
-
-        # 섹션 처리
-        section_title = request.data.get("section")
-        if section_title:
-            section, created = Section.objects.get_or_create(
-                title=section_title, shop_id=shop_pk
-            )
-            data["section"] = section.pk
-
-        serializer = ProductCreateSerializer(data=data)
-
-        if serializer.is_valid():
-            product = serializer.save()  # 상품을 저장합니다.
-
-            # Variation 처리
-            variation_instances = {}
-            variations_data = request.data.get("variations", [])
-            for variation_data in variations_data:
-                variation = Variation.objects.create(
-                    name=variation_data["name"],
-                    product=product,
-                    is_sku_vary=variation_data["is_sku_vary"],
-                    is_price_vary=variation_data.get("is_price_vary", False),
-                    is_quantity_vary=variation_data.get("is_quantity_vary", False),
-                )
-                variation_instances[variation.name] = variation
-
-                for option_data in variation_data.get("options", []):
-                    VariationOption.objects.create(
-                        name=option_data["name"], variation=variation
-                    )
-
-            # ProductVariant 처리
-            variants_data = request.data.get("variants", [])
-            for variant_data in variants_data:
-                option_one = None
-                option_two = None
-
-                # option_one 찾기
-                if variant_data.get("option_one"):
-                    option_one = VariationOption.objects.filter(
-                        name=variant_data.get("option_one"),
-                        variation__in=variation_instances.values(),
-                    ).first()
-
-                # option_two 찾기
-                if variant_data.get("option_two"):
-                    option_two = VariationOption.objects.filter(
-                        name=variant_data.get("option_two"),
-                        variation__in=variation_instances.values(),
-                    ).first()
-
-                ProductVariant.objects.create(
-                    product=product,
-                    option_one=option_one,
-                    option_two=option_two,
-                    sku=variant_data.get("sku", ""),
-                    price=variant_data.get("price", 0),
-                    quantity=variant_data.get("quantity", 0),
-                    is_visible=variant_data.get("is_visible", True),
-                )
-
-            materials_data = request.data.get("materials", [])  # 재료 이름 목록을 받음
-            for material_name in materials_data:
-                material, created = Material.objects.get_or_create(name=material_name)
-                product.materials.add(material)
-
-            # 태그 처리
-            tags_data = request.data.get("tags", [])  # 사용자가 제공한 태그 목록
-            for tag_name in tags_data:
-                tag, created = ProductTag.objects.get_or_create(tag=tag_name)
-                product.tags.add(tag)
-
-            # 이미지 처리
-            thumbnail_url = None
-            images_data = request.data.get("images", [])
-            for image_data in images_data:
-                image_obj = ProductImage.objects.create(
-                    product=product,
-                    image=image_data.get("image"),
-                    order=image_data.get("order"),
-                )
-                if image_obj.order == 1:
-                    thumbnail_url = image_obj.image
-
-            if thumbnail_url:
-                product.thumbnail = thumbnail_url
-                product.save()
-
-            product.category.add(category.id)
-            if primary_color:
-                product.primary_color = primary_color
-            if secondary_color:
-                product.secondary_color = secondary_color
-            product.save()
-
-            if category.parent:
-                product.category.add(category.parent.id)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 
 # 상품 생성 Or 편집 화면에서 section 생성
 class CreateSection(APIView):
