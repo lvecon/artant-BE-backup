@@ -104,18 +104,12 @@ class ShopDetail(APIView):
         )
         return Response(serializer.data)
 
-    def put(self, request, pk):
-        try:
-            shop = request.user.shop
-            if shop.id != pk:
-                raise Shop.DoesNotExist
-        except Shop.DoesNotExist:
-            return Response(
-                {"error": "Shop not found or not owned by user."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+    def patch(self, request, pk):
+        shop = self.get_object(pk)
+        if shop.user != request.user:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = serializers.ShopUpdateSerializer(shop, data=request.data)
+        serializer = serializers.ShopUpdateSerializer(shop, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

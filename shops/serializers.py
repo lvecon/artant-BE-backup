@@ -131,11 +131,7 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             "facebook_url",
             "website_url",
             "is_star_seller",
-            "image_1",
-            "image_2",
-            "image_3",
-            "image_4",
-            "image_5",
+
         ]
         extra_kwargs = {
             "user": {"read_only": True},
@@ -143,7 +139,7 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
-        # Update the Shop instance with the validated data
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()

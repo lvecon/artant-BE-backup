@@ -19,7 +19,9 @@ class Shop(CommonModel):
     description_title = models.CharField(max_length=256, blank=True, null=True)
     description = models.TextField(max_length=2000, blank=True, null=True)
     announcement = models.CharField(max_length=256, blank=True, null=True)
-    expiration = models.TimeField(blank=True, null=True)
+    expiration = models.DateField(
+        blank=True, null=True
+    )
     address = models.OneToOneField(
         Address,
         related_name="+",
