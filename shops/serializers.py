@@ -94,7 +94,7 @@ class ShopDetailSerializer(ModelSerializer):
         return list(images)
 
     def get_sections_info(self, shop):
-        sections = Section.objects.filter(shop=shop)
+        sections = Section.objects.filter(shop=shop).order_by('order')
         return [
             {
                 "title": section.title,
@@ -112,6 +112,7 @@ class ShopCreateSerializer(serializers.ModelSerializer):
 
 class ShopUpdateSerializer(serializers.ModelSerializer):
     sections_info = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
 
     class Meta:
         model = Shop
@@ -126,6 +127,7 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             "description",
             "announcement",
             "sections_info",
+            "images",
             "expiration",
             "address",
             "cancellation",
@@ -159,6 +161,10 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             }
             for section in sections
         ]
+    
+    def get_images(self, shop):
+        images = shop.images.order_by("order").values_list("image", flat=True)
+        return list(images)
 
 
 

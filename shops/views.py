@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
-from shops.models import Shop, Section
+from shops.models import Shop, Section, ShopImage
 from products.models import Product, Color, ProductImage
 from product_attributes.models import Category, Material, ProductTag
 from product_variants.models import ProductVariant, Variation, VariationOption
@@ -111,20 +111,24 @@ class ShopDetail(APIView):
 
         sections_data = request.data.get('sections')
         if sections_data:
-            # 섹션의 title 중복 확인
+            # 섹션의 title 중복 확인 TODO: 프론트에서 확인할지 논의
             titles = [section.get('title') for section in sections_data]
             if len(titles) != len(set(titles)):
                 return Response(
                     {"error": "Duplicate section titles found."},
                     status=status.HTTP_400_BAD_REQUEST,
             )
-
+        images_data = request.data.get('images')
+       
         serializer = serializers.ShopUpdateSerializer(shop, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             #섹션 정보 업데이트 (sections 키가 있는 경우에만)
             if sections_data is not None:
                 self.update_sections(sections_data, shop)
+
+            if images_data is not None:
+                self.update_images(images_data, shop)
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -137,16 +141,17 @@ class ShopDetail(APIView):
     
 
     def update_sections(self, sections_data, shop):
-        existing_sections = set(shop.sections.all())
+        existing_sections = {section.title: section for section in shop.sections.all()}
         updated_sections = set()
 
         for section_data in sections_data:
             section_title = section_data.get("title")
-            existing_section = shop.sections.filter(title=section_title).first()
-            if existing_section:
-                # 기존 섹션 업데이트
-               for key, value in section_data.items():
-                setattr(existing_section, key, value)
+            # TODO: 기존 섹션의 경우 요청에 id를 함께 보내서 이를 통해 기존 섹션인지 확인하는 방법도..
+            if section_title in existing_sections:
+            # 기존 섹션 업데이트
+                existing_section = existing_sections[section_title]
+                for key, value in section_data.items():
+                    setattr(existing_section, key, value)
                 existing_section.save()
                 updated_sections.add(existing_section)
             else:
@@ -155,8 +160,34 @@ class ShopDetail(APIView):
                 updated_sections.add(new_section)
 
         # 삭제되어야 하는 섹션 찾기 및 삭제. TODO: 삭제 허용에 대해 의논. 기존에 연결된 상품 어떻게 할지?
-        for section in existing_sections - updated_sections:
-            section.delete()
+        for title, existing_section in existing_sections.items():
+            if existing_section not in updated_sections:
+                existing_section.delete()
+
+    def update_images(self, images_data, shop):
+        existing_images = {image.image: image for image in shop.images.all()}
+        updated_images = set()
+
+        for image_data in images_data:
+            image_url = image_data.get("image")
+            if image_url in existing_images:
+                # 기존 이미지 업데이트
+                image = existing_images[image_url]
+                for key, value in image_data.items():
+                    setattr(image, key, value)
+                image.save()
+                updated_images.add(image)
+            else:
+                # 새 이미지 추가
+                new_image = ShopImage.objects.create(**image_data, shop=shop)
+                updated_images.add(new_image)
+
+        # 삭제되어야 하는 이미지 찾기 및 삭제
+        for existing_image in existing_images.values():
+            if existing_image not in updated_images:
+                existing_image.delete()
+
+
 
 
 class ShopReviews(APIView):
