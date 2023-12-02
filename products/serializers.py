@@ -329,6 +329,8 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     materials = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    video = serializers.SerializerMethodField()
+    section = serializers.SerializerMethodField()
     variations = VariationSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     thumbnail = serializers.URLField(read_only=True)
@@ -354,6 +356,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "sku",
             "thumbnail",
             "images",
+            "video",
             "processing_min",
             "processing_max",
             "shipping_price",
@@ -375,6 +378,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     def get_tags(self, obj):
         return [tag.tag for tag in obj.tags.all()]
+    
+    def get_section(self, obj):
+        return obj.section.title if obj.section else None
 
     def get_materials(self, obj):
         return [material.name for material in obj.materials.all()]
@@ -382,6 +388,10 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         images = obj.images.order_by("order").values_list("image", flat=True)
         return list(images)
+    
+    def get_video(self, obj):
+        return obj.video.video if obj.video else None
+    
 
 
 class EditProductSerializer(serializers.ModelSerializer):

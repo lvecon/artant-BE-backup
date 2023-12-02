@@ -9,9 +9,9 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-
+from django.db.models import Max
 from shops.models import Shop, Section, ShopImage, ShopVideo
-from products.models import Product, Color, ProductImage
+from products.models import Product, Color, ProductImage, ProductVideo
 from product_attributes.models import Category, Material, ProductTag
 from product_variants.models import ProductVariant, Variation, VariationOption
 from reviews.models import Review
@@ -327,44 +327,43 @@ class ShopProducts(APIView):
       
         data = request.data.copy()
         data["shop"] = shop_pk
-        # 섹션 처리
-        self.set_section(data, shop_pk)
+        
         serializer = ProductCreateSerializer(data=data)
         if serializer.is_valid():
-            # 카테고리 이름으로 카테고리 객체를 가져옴, 없으면 404 응답
-            category_name = request.data.get("category_name")
-            category = get_object_or_404(Category, name=category_name)
-
-            # 색상 처리
+             # 카테고리와 색상 처리
+            category = self.get_category(request)
             primary_color, secondary_color = self.get_colors(request)
 
             # 상품 저장
             product = serializer.save()
+
+            # 섹션 처리 및 상품에 섹션 정보 추가
+            self.set_section(data, shop_pk, product)
             
-            # Variation 처리
-            self.create_variations(
-                variations_data=request.data.get("variations", []), product=product
-            )
-            self.create_variants(
-                variants_data=request.data.get("variants", []), product=product
-            )
+            # Variation, Variant, Material, Tag, Image
+            self.create_variations(variations_data=request.data.get("variations", []), product=product)
+            self.create_variants(variants_data=request.data.get("variants", []), product=product)
             self.set_materials_and_tags(materials_data=request.data.get("materials", []),
                                         tags_data=request.data.get("tags", []), product=product)
             self.process_images(images_data=request.data.get("images", []), product=product)
-
+            self.create_video(video_url=request.data.get("video", []), product=product)
+            # 카테고리, 색상 추가 및 저장
             product.category.add(category.id)
-            if primary_color:
-                product.primary_color = primary_color
-            if secondary_color:
-                product.secondary_color = secondary_color
+            product.primary_color = primary_color
+            product.secondary_color = secondary_color
             product.save()
-
+            # 상위 카테고리 추가
             if category.parent:
                 product.category.add(category.parent.id)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_category(self, request):
+        category_name = request.data.get("category_name")
+        category = get_object_or_404(Category, name=category_name)
+        return category
 
     # primary color, secondary color 처리
     def get_colors(self, request):
@@ -387,13 +386,19 @@ class ShopProducts(APIView):
 
         return primary_color, secondary_color
 
-    def set_section(self, data, shop_pk):
+    def set_section(self, data, shop_pk, product):
         section_title = data.get("section")
         if section_title:
-            section, _ = Section.objects.get_or_create(
+            section, created = Section.objects.get_or_create(
                 title=section_title, shop_id=shop_pk
             )
-            data["section"] = section.pk
+            if created:
+                max_order = Section.objects.filter(shop_id=shop_pk).aggregate(Max('order'))['order__max'] or 0
+                section.order = max_order + 1
+                section.save()
+            product.section = section
+            product.save()
+            return section
 
     def create_variations(self, variations_data, product):
         for variation_data in variations_data:
@@ -455,6 +460,10 @@ class ShopProducts(APIView):
         if thumbnail_url:
             product.thumbnail = thumbnail_url
             product.save()
+
+    def create_video(self, video_url, product):
+        if video_url:
+            ProductVideo.objects.create(video=video_url, product=product)
 
 
 class ReviewPhotos(APIView):

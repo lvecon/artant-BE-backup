@@ -72,7 +72,7 @@ class Product(CommonModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="products",
+        related_name="section",
     )
 
     processing_min = models.CharField(max_length=32, default=3)
