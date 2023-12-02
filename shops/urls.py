@@ -12,5 +12,5 @@ urlpatterns = [
     path("<int:pk>/reviews", views.ShopReviews.as_view()),
     path("<int:pk>/reviews/images/<int:product_pk>", views.ReviewPhotos.as_view()),
     path("<int:shop_pk>/products", views.ShopProducts.as_view()),
-    path("<int:shop_pk>/create-section", views.CreateSection.as_view()),
+    path("<int:shop_pk>/sections", views.Sections.as_view()),
 ]

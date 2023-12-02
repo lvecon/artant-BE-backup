@@ -156,38 +156,39 @@ class ShopDetail(APIView):
     
 
     def update_sections(self, sections_data, shop):
-        existing_sections = {section.title: section for section in shop.sections.all()}
+        existing_sections = set(shop.sections.all())
         updated_sections = set()
 
         for section_data in sections_data:
+            section_id = section_data.get("id")
             section_title = section_data.get("title")
-            # TODO: 기존 섹션의 경우 요청에 id를 함께 보내서 이를 통해 기존 섹션인지 확인하는 방법도..
-            if section_title in existing_sections:
-            # 기존 섹션 업데이트
-                existing_section = existing_sections[section_title]
+
+            if section_id:
+                # 기존 섹션 업데이트
+                section = shop.sections.get(id=section_id)
                 for key, value in section_data.items():
-                    setattr(existing_section, key, value)
-                existing_section.save()
-                updated_sections.add(existing_section)
+                    setattr(section, key, value)
+                section.save()
+                updated_sections.add(section)
             else:
                 # 새 섹션 추가
                 new_section = Section.objects.create(**section_data, shop=shop)
                 updated_sections.add(new_section)
 
-        # 삭제되어야 하는 섹션 찾기 및 삭제. TODO: 삭제 허용에 대해 의논. 기존에 연결된 상품 어떻게 할지?
-        for title, existing_section in existing_sections.items():
-            if existing_section not in updated_sections:
-                existing_section.delete()
+        # 삭제되어야 하는 섹션 찾기 및 삭제 TODO: 삭제 허용에 대한 의논. 기존에 연결된 상품 어떻게 할지
+        sections_to_delete = existing_sections - updated_sections
+        for section in sections_to_delete:
+            section.delete()
 
     def update_images(self, images_data, shop):
-        existing_images = {image.image: image for image in shop.images.all()}
+        existing_images = set(shop.images.all())
         updated_images = set()
 
         for image_data in images_data:
-            image_url = image_data.get("image")
-            if image_url in existing_images:
+            image_id = image_data.get("id")
+            if image_id:
                 # 기존 이미지 업데이트
-                image = existing_images[image_url]
+                image = shop.images.get(id=image_id)
                 for key, value in image_data.items():
                     setattr(image, key, value)
                 image.save()
@@ -198,9 +199,8 @@ class ShopDetail(APIView):
                 updated_images.add(new_image)
 
         # 삭제되어야 하는 이미지 찾기 및 삭제
-        for existing_image in existing_images.values():
-            if existing_image not in updated_images:
-                existing_image.delete()
+        for image in existing_images - updated_images:
+            image.delete()
 
 
 
@@ -509,7 +509,7 @@ class ReviewPhotos(APIView):
     
 
 # 상품 생성 Or 편집 화면에서 section 생성
-class CreateSection(APIView):
+class Sections(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, shop_pk):

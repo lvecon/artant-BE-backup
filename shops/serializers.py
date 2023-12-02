@@ -165,8 +165,16 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
         ]
     
     def get_images(self, shop):
-        images = shop.images.order_by("order").values_list("image", flat=True)
-        return list(images)
+        images = shop.images.order_by("order")
+        return [
+            {   
+                "id": image.pk,
+                "image": image.image,
+                "order" : image.order,
+      
+            }
+            for image in images
+        ]
     
     def get_video(self, shop):
         return shop.video.video
