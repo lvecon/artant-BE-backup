@@ -283,9 +283,14 @@ class ShopProducts(APIView):
         # 섹션 제목 기반 필터링
         section_title = request.query_params.get("section")
         if section_title:
-            sections = Section.objects.filter(title=section_title, shop=shop)
-            if sections.exists():
-                products = products.filter(section__in=sections)
+            section = shop.sections.filter(title=section_title).first()
+            if section:
+                products = products.filter(section=section)
+            else:
+                return Response(
+                {"error": "section not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
         try:
             page = int(request.query_params.get("page", 1))
