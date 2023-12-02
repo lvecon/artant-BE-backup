@@ -94,14 +94,19 @@ class ShopDetailSerializer(ModelSerializer):
         return list(images)
 
     def get_sections_info(self, shop):
+        
+        # "모든 작품" 섹션을 첫 번째 요소로 추가
+        sections_info = [{"title": "모든 작품", "product_count": shop.products.count()}]
+
+        # 나머지 섹션들을 추가
         sections = Section.objects.filter(shop=shop).order_by('order')
-        return [
-            {
+        for section in sections:
+            sections_info.append({
                 "title": section.title,
                 "product_count": shop.products.filter(section=section).count(),
-            }
-            for section in sections
-        ]
+            })
+
+        return sections_info
 
 
 class ShopCreateSerializer(serializers.ModelSerializer):
