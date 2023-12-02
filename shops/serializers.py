@@ -55,6 +55,7 @@ class ShopSerializer(ModelSerializer):
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    video = serializers.SerializerMethodField()
     sections_info = serializers.SerializerMethodField()
     user = TinyUserSerializer(read_only=True)
 
@@ -77,6 +78,7 @@ class ShopDetailSerializer(ModelSerializer):
             "is_liked",
             "is_star_seller",
             "images",
+            "video",
         )
 
     def get_is_liked(self, shop):
@@ -92,9 +94,12 @@ class ShopDetailSerializer(ModelSerializer):
     def get_images(self, shop):
         images = shop.images.order_by("order").values_list("image", flat=True)
         return list(images)
+    
+    def get_video(self, shop):
+        return shop.video.video if shop.video else None
 
     def get_sections_info(self, shop):
-        
+
         # "모든 작품" 섹션을 첫 번째 요소로 추가
         sections_info = [{"title": "모든 작품", "product_count": shop.products.count()}]
 
