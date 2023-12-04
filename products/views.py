@@ -159,7 +159,7 @@ class Products(APIView):
             return Response(response_data)
 
 
-class ProductDetails(APIView):
+class ProductDetail(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def user_viewed(self, timestamp, product):
@@ -387,7 +387,34 @@ class ProductReviewReply(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PhotoDetail(APIView):
+class ProductImages(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_product(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise NotFound("Product not found")
+
+    def post(self, request, pk):
+        product = self.get_product(pk)
+
+        # 상품 소유권 확인
+        if hasattr(request.user, "shop") and request.user.shop != product.shop:
+            raise PermissionDenied(
+                "You do not have permission to add images to this product"
+            )
+
+        # 이미지 추가
+        serializer = serializers.ProductImageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(product=product)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductImageDetail(APIView):
     permission_classes = [IsAuthenticated]  # check user authenticated
 
     def get_object(self, pk):
@@ -398,79 +425,8 @@ class PhotoDetail(APIView):
 
     def delete(self, request, pk):
         photo = self.get_object(pk)
-        # if (photo.product and photo.product.owner != request.user) or (
-        #     photo.experience and photo.experience.host != request.user
-        # ):
-        #     raise PermissionDenied
         photo.delete()
-        return Response(status=HTTP_200_OK)
-
-
-class GetUploadURL(APIView):
-    def post(self, request):
-        url = f"https://api.cloudflare.com/client/v4/accounts/{settings.CF_ID}/images/v2/direct_upload"
-
-        one_time_url = requests.post(
-            url,
-            headers={"Authorization": f"Bearer {settings.CF_TOKEN}"},
-        )
-        one_time_url = one_time_url.json()
-        result = one_time_url.get("result")
-        return Response({"uploadURL": result.get("uploadURL")})
-
-
-class GetVideoUploadURL(APIView):
-    def post(self, request):
-        url = f"https://api.cloudflare.com/client/v4/accounts/{settings.CF_ID}/stream/direct_upload"
-
-        payload = {"maxDurationSeconds": 60}
-
-        try:
-            response = requests.post(
-                url,
-                headers={"Authorization": f"Bearer {settings.CF_TOKEN}"},
-                json=payload,  # Use json parameter to send JSON data in the request body
-            )
-            response_data = response.json()
-            if response.status_code == 200:
-                upload_url = response_data.get("result", {}).get("uploadURL")
-                if upload_url:
-                    return Response({"uploadURL": upload_url})
-                else:
-                    return Response(
-                        {"error": "Failed to retrieve upload URL"},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    )
-            else:
-                return Response(response_data, status=response.status_code)
-        except requests.exceptions.RequestException as e:
-            return Response(
-                {"error": "Request to Cloudflare failed"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-class ProductImages(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_object(self, pk):
-        try:
-            return Product.objects.get(pk=pk)
-        except Product.DoesNotExist:
-            raise NotFound
-
-    def post(self, request, pk):
-        product = self.get_object(pk)
-
-        # if request.user != room.owner:
-        #     raise PermissionDenied
-        serializer = serializers.PhotoSerializer(data=request.data)
-        if serializer.is_valid():
-            photo = serializer.save(product=product)  # connect to room
-            serializer = serializers.PhotoSerializer(photo)
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
+        return Response({"message": "ProductImage deleted"}, status=HTTP_200_OK)
 
 
 class ProductVideos(APIView):

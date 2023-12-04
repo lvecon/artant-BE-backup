@@ -31,5 +31,5 @@ urlpatterns = [
     path("api/v1/collections/", include("product_collections.urls")),
     path("api/v1/favorites/", include("favorites.urls")),
     path("api/v1/user-activities/", include("user_activities.urls")),
-    
+    path("api/v1/common/", include("common.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

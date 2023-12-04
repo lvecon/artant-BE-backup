@@ -321,15 +321,17 @@ class TinyProductSerializer(serializers.ModelSerializer):
         else:
             return 0
 
-
+# 유효성 검사 더 구체적으로 가능하게 하기
 class ProductCreateSerializer(serializers.ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     materials = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     variations = VariationSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
+    thumbnail = serializers.URLField(read_only=True)
 
     class Meta:
         model = Product
@@ -350,10 +352,11 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "price",
             "quantity",
             "sku",
+            "thumbnail",
+            "images",
             "processing_min",
             "processing_max",
             "shipping_price",
-            "thumbnail",
             "is_personalization_enabled",
             "is_personalization_optional",
             "personalization_guide",
@@ -375,6 +378,10 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     def get_materials(self, obj):
         return [material.name for material in obj.materials.all()]
+
+    def get_images(self, obj):
+        images = obj.images.order_by("order").values_list("image", flat=True)
+        return list(images)
 
 
 class EditProductSerializer(serializers.ModelSerializer):
@@ -471,3 +478,9 @@ class EditProductSerializer(serializers.ModelSerializer):
         ).count()
 
         return count_in_carts
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ["image", "order"]

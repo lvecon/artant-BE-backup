@@ -149,6 +149,7 @@ class ProductImage(CommonModel):
         on_delete=models.CASCADE,
         related_name="images",
     )
+    order = models.PositiveIntegerField()
 
     def __str__(self):
         return f"{self.product}"

@@ -19,7 +19,9 @@ class Shop(CommonModel):
     description_title = models.CharField(max_length=256, blank=True, null=True)
     description = models.TextField(max_length=2000, blank=True, null=True)
     announcement = models.CharField(max_length=256, blank=True, null=True)
-    expiration = models.TimeField(blank=True, null=True)
+    expiration = models.DateField(
+        blank=True, null=True
+    )
     address = models.OneToOneField(
         Address,
         related_name="+",
@@ -35,24 +37,45 @@ class Shop(CommonModel):
     facebook_url = models.URLField(blank=True, null=True)
     website_url = models.URLField(blank=True, null=True)
     is_star_seller = models.BooleanField(default=False)
-    image_1 = models.URLField(blank=True, null=True)
-    image_2 = models.URLField(blank=True, null=True)
-    image_3 = models.URLField(blank=True, null=True)
-    image_4 = models.URLField(blank=True, null=True)
-    image_5 = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.shop_name
 
 
-class Section(models.Model):
+# TODO: shop, order 에 unique_together 옵션 추가할지 의논 / Common model을 쓸 필요성
+class Section(CommonModel):
     title = models.CharField(max_length=64)
-    rank = models.PositiveIntegerField(null=True, unique=True)
     shop = models.ForeignKey(
         "Shop",
         on_delete=models.CASCADE,
         related_name="sections",
     )
+    order = models.PositiveIntegerField()
 
     def __str__(self):
         return self.title
+
+
+class ShopImage(CommonModel):
+    image = models.URLField()
+    shop = models.ForeignKey(
+        "Shop",
+        on_delete=models.CASCADE,
+        related_name="images",
+    )
+    order = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.shop}"
+
+
+class ShopVideo(CommonModel):
+    video = models.URLField()
+    shop = models.OneToOneField(
+        "Shop",
+        on_delete=models.CASCADE,
+        related_name="video",
+    )
+
+    def __str__(self):
+        return f"{self.shop}"

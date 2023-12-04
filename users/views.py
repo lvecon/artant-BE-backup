@@ -107,7 +107,7 @@ class LogOut(APIView):
         return Response({"ok": "bye!"})
 
 
-class SignUpView(APIView):
+class SignUp(APIView):
     def post(self, request, format=None):
         serializer = serializers.UserSerializer(data=request.data)
         if serializer.is_valid():
