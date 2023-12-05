@@ -92,8 +92,9 @@ class ShopDetailSerializer(ModelSerializer):
         return False
 
     def get_images(self, shop):
-        images = shop.images.order_by("order").values_list("image", flat=True)
+        images = shop.images.order_by("order").values("id", "image")
         return list(images)
+
     
     def get_video(self, shop):
         return shop.video.video if shop.video else None
@@ -107,6 +108,7 @@ class ShopDetailSerializer(ModelSerializer):
         sections = Section.objects.filter(shop=shop).order_by('order')
         for section in sections:
             sections_info.append({
+                "id" : section.pk,
                 "title": section.title,
                 "product_count": shop.products.filter(section=section).count(),
             })

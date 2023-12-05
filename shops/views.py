@@ -159,19 +159,23 @@ class ShopDetail(APIView):
         existing_sections = set(shop.sections.all())
         updated_sections = set()
 
-        for section_data in sections_data:
+        for index, section_data in enumerate(sections_data, start=1):
             section_id = section_data.get("id")
             section_title = section_data.get("title")
+            section_order = index
 
             if section_id:
                 # 기존 섹션 업데이트
                 section = shop.sections.get(id=section_id)
                 for key, value in section_data.items():
-                    setattr(section, key, value)
+                    if key != "order":  # Skip updating order from request data. TODO: is it necessary?
+                        setattr(section, key, value)
+                section.order = section_order 
                 section.save()
                 updated_sections.add(section)
             else:
                 # 새 섹션 추가
+                section_data["order"] = section_order
                 new_section = Section.objects.create(**section_data, shop=shop)
                 updated_sections.add(new_section)
 
@@ -184,17 +188,21 @@ class ShopDetail(APIView):
         existing_images = set(shop.images.all())
         updated_images = set()
 
-        for image_data in images_data:
+        for index, image_data in enumerate(images_data, start=1):
             image_id = image_data.get("id")
+            image_order = index
             if image_id:
                 # 기존 이미지 업데이트
                 image = shop.images.get(id=image_id)
                 for key, value in image_data.items():
-                    setattr(image, key, value)
+                    if key != "order":  # Skip updating order from request data TODO: is it necessary?
+                        setattr(image, key, value)
+                image.order = image_order
                 image.save()
                 updated_images.add(image)
             else:
                 # 새 이미지 추가
+                image_data["order"] = image_order
                 new_image = ShopImage.objects.create(**image_data, shop=shop)
                 updated_images.add(new_image)
 
@@ -438,6 +446,7 @@ class ShopProducts(APIView):
                 name=option_name,
                 variation__product=product,
             ).first()
+        
     def set_materials_and_tags(self, materials_data, tags_data, product):
         for material_name in materials_data:
             material, _ = Material.objects.get_or_create(name=material_name)
