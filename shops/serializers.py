@@ -56,7 +56,8 @@ class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     video = serializers.SerializerMethodField()
-    sections_info = serializers.SerializerMethodField()
+    common_sections = serializers.SerializerMethodField()
+    featured_sections = serializers.SerializerMethodField()
     user = TinyUserSerializer(read_only=True)
 
     class Meta:
@@ -68,7 +69,8 @@ class ShopDetailSerializer(ModelSerializer):
             "avatar",
             "background_pic",
             "announcement",
-            "sections_info",
+            "common_sections",
+            "featured_sections",
             "short_description",
             "description_title",
             "description",
@@ -98,22 +100,29 @@ class ShopDetailSerializer(ModelSerializer):
     
     def get_video(self, shop):
         return shop.video.video if shop.video else None
+    
+    def get_common_sections(self, shop):
+        common_sections = [{"title": "모든 작품", "product_count": shop.products.count()}]
+        # "할인 중" 섹션을 추가 TODO: is_discount를 필드로 만들어서 추후에 최적화 하기
+        discount_products_count = sum(1 for product in shop.products.all() if product.is_discount())
+        common_sections.append({"title": "할인 중", "product_count": discount_products_count})
 
-    def get_sections_info(self, shop):
+        return common_sections
 
-        # "모든 작품" 섹션을 첫 번째 요소로 추가
-        sections_info = [{"title": "모든 작품", "product_count": shop.products.count()}]
+
+    def get_featured_sections(self, shop):
+        featured_sections = []
 
         # 나머지 섹션들을 추가
         sections = Section.objects.filter(shop=shop).order_by('order')
         for section in sections:
-            sections_info.append({
+            featured_sections.append({
                 "id" : section.pk,
                 "title": section.title,
                 "product_count": shop.products.filter(section=section).count(),
             })
 
-        return sections_info
+        return featured_sections
 
 
 class ShopCreateSerializer(serializers.ModelSerializer):
