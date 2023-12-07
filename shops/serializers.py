@@ -199,7 +199,7 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
         ]
     
     def get_video(self, shop):
-        return shop.video.video
+        return shop.video.video if hasattr(shop, "video") and shop.video else None
 
 
 
