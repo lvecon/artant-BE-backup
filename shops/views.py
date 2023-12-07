@@ -1,5 +1,6 @@
 from time import sleep
 from django.db.models import Count
+from django.db.models import F
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.response import Response
@@ -291,14 +292,20 @@ class ShopProducts(APIView):
 
         # 섹션 제목 기반 필터링
         section_title = request.query_params.get("section")
-        if section_title:
+        if section_title == "모든 작품":
+            # 모든 상품을 반환합니다
+            pass
+        elif section_title == "할인 중":
+            # 할인 중인 상품만 필터링합니다
+            products = products.filter(original_price__gt=F('price'))
+        elif section_title:
             section = shop.sections.filter(title=section_title).first()
             if section:
                 products = products.filter(section=section)
             else:
                 return Response(
-                {"error": "section not found"}, status=status.HTTP_400_BAD_REQUEST
-            )
+                    {"error": "section not found"}, status=status.HTTP_400_BAD_REQUEST
+                )
 
 
         try:
