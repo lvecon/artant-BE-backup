@@ -131,19 +131,20 @@ class ShopDetail(APIView):
                 self.update_images(images_data, shop)
 
             # 비디오 정보 업데이트
-            video_url = request.data.get('video')
+            video_url = request.data.get('video', None)
             if video_url is not None:
-                if hasattr(shop, 'video'):
-                    # 기존 비디오 업데이트
-                    shop.video.video = video_url
-                    shop.video.save()
-                else:
-                    # 새 비디오 생성
-                    ShopVideo.objects.create(video=video_url, shop=shop)
-            else:
-                # 요청에 비디오 URL이 없는 경우, 기존 비디오 삭제
-                if hasattr(shop, 'video'):
+                if video_url == "" and hasattr(shop, 'video'):
+                    # 비디오가 ""이고 shop에 비디오가 있는 경우, 비디오 삭제
                     shop.video.delete()
+                elif video_url:
+                    # 비디오 URL이 존재하면 기존 비디오 업데이트 또는 새 비디오 생성
+                    if hasattr(shop, 'video'):
+                        shop.video.video = video_url
+                        shop.video.save()
+                    else:
+                        ShopVideo.objects.create(video=video_url, shop=shop)
+            # 'video' 필드가 없거나 값이 None인 경우 아무것도 하지 않음
+
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
