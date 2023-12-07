@@ -1,5 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
+from django.core.exceptions import ObjectDoesNotExist
 from .models import Shop, Section
 from users.serializers import TinyUserSerializer
 from products.models import Product
@@ -99,8 +100,12 @@ class ShopDetailSerializer(ModelSerializer):
 
     
     def get_video(self, shop):
-        return shop.video.video if shop.video else None
-    
+        try:
+            return shop.video.video if shop.video else None
+        except ObjectDoesNotExist:
+            # 'shop' 객체에 'video'가 없음
+            return None
+        
     def get_common_sections(self, shop):
         common_sections = [{"title": "모든 작품", "product_count": shop.products.count()}]
         # "할인 중" 섹션을 추가 TODO: is_discount를 필드로 만들어서 추후에 최적화 하기
