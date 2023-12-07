@@ -321,7 +321,7 @@ class TinyProductSerializer(serializers.ModelSerializer):
         else:
             return 0
 
-# 유효성 검사 더 구체적으로 가능하게 하기
+# 유효성 검사 더 구체적으로 가능하게 하기 TODO: validate method 추가
 class ProductCreateSerializer(serializers.ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
@@ -390,7 +390,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         return list(images)
     
     def get_video(self, obj):
-        return obj.video.video if obj.video else None
+        return obj.video.video if hasattr(obj, "video") and obj.video else None
     
 
 

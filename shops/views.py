@@ -296,7 +296,7 @@ class ShopProducts(APIView):
             # 모든 상품을 반환합니다
             pass
         elif section_title == "할인 중":
-            # 할인 중인 상품만 필터링합니다
+            # 할인 중인 상품만 필터링합니다 TODO: is_discount field 추가되면 수정
             products = products.filter(original_price__gt=F('price'))
         elif section_title:
             section = shop.sections.filter(title=section_title).first()
@@ -362,7 +362,7 @@ class ShopProducts(APIView):
             self.set_materials_and_tags(materials_data=request.data.get("materials", []),
                                         tags_data=request.data.get("tags", []), product=product)
             self.process_images(images_data=request.data.get("images", []), product=product)
-            self.create_video(video_url=request.data.get("video", []), product=product)
+            self.create_video(video_url=request.data.get("video", None), product=product)
             # 카테고리, 색상 추가 및 저장
             product.category.add(category.id)
             product.primary_color = primary_color
