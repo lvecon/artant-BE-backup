@@ -11,7 +11,8 @@ from .models import (
 from product_variants.models import (
     ProductVariant,
 )
-from product_attributes.models import Category, Color, ProductTag
+from product_attributes.models import Category, Color, ProductTag, Material
+from shops.models import Section
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
 from product_variants.serializers import (
@@ -408,7 +409,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
     materials = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     video = serializers.SerializerMethodField()
-    section = serializers.SerializerMethodField()
+    section = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Product
@@ -452,6 +453,14 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
                 tag, created = ProductTag.objects.get_or_create(tag=tag_name)
                 instance.tags.add(tag)
 
+        materials_list = self.context.get('request').data.get('materials')
+        if materials_list is not None:
+            instance.materials.clear()
+            for material_name in materials_list:
+                material, created = Material.objects.get_or_create(name=material_name)
+                instance.materials.add(material)
+
+
 
         # category_name 처리
         category_name = validated_data.pop('category_name', None)
@@ -481,6 +490,26 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             else:
                 raise serializers.ValidationError({"secondary_color": "Invalid color name"})
         
+        # section 처리
+        section_name = validated_data.pop('section', None)
+        if section_name is not None:
+            if section_name.strip():  # 빈 문자열이 아닌 경우
+                # 상점에 해당하는 섹션을 찾거나 생성
+                section_instance, created = Section.objects.get_or_create(
+                    title=section_name, shop=instance.shop
+                )
+                if created:  # 새로운 섹션이 생성된 경우
+                # 현재 상점의 섹션 개수를 기준으로 order 값을 설정
+                    last_order = Section.objects.filter(shop=instance.shop).count()
+                    section_instance.order = last_order
+                    section_instance.save()
+                # 섹션을 상품과 연결
+                instance.section = section_instance
+            else:
+                # 섹션 연결 제거 (빈 문자열인 경우)
+                instance.section = None
+
+
         # 나머지 필드 업데이트
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
