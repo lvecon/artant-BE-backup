@@ -401,8 +401,8 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(write_only=True, required=False)
     category = serializers.SerializerMethodField()
     subCategory = serializers.SerializerMethodField()
-    images = serializers.SerializerMethodField()
-    video = serializers.SerializerMethodField()
+    
+
     primary_color = serializers.CharField(required=False, allow_null=True)
     secondary_color = serializers.CharField(required=False, allow_null=True)
     tags = serializers.SerializerMethodField()
@@ -460,8 +460,26 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
                 material, created = Material.objects.get_or_create(name=material_name)
                 instance.materials.add(material)
 
+        # 이미지 처리
+        images_data = self.context.get('request').data.get('images')
+        if images_data is not None:
+            self.update_images(images_data, instance)
 
+        # 비디오 처리
+        video_url = self.context.get('request').data.get('video')
+        if video_url is not None:
+            if video_url == "" and hasattr(instance, 'video'):
+                # 비디오 URL이 빈 문자열이고 상품에 비디오가 있는 경우, 비디오 삭제
+                instance.video.delete()
+            elif video_url:
+                # 비디오 URL이 존재하면 기존 비디오 업데이트 또는 새 비디오 생성
+                if hasattr(instance, 'video'):
+                    instance.video.video = video_url
+                    instance.video.save()
+                else:
+                    ProductVideo.objects.create(video=video_url, product=instance)
 
+        # ----- validated_data 사용 ------
         # category_name 처리
         category_name = validated_data.pop('category_name', None)
         if category_name:
@@ -509,6 +527,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
                 # 섹션 연결 제거 (빈 문자열인 경우)
                 instance.section = None
 
+    
 
         # 나머지 필드 업데이트
         for attr, value in validated_data.items():
@@ -538,6 +557,32 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
     
     def get_video(self, obj):
         return obj.video.video if hasattr(obj, "video") and obj.video else None
+    
+    def update_images(self, images_data, product):
+        existing_images = set(product.images.all())
+        updated_images = set()
+
+        for index, image_data in enumerate(images_data, start=1):
+            image_id = image_data.get("id")
+            image_order = index
+            if image_id:
+                # 기존 이미지 업데이트
+                image = product.images.get(id=image_id)
+                for key, value in image_data.items():
+                    if key != "order":
+                        setattr(image, key, value)
+                image.order = image_order
+                image.save()
+                updated_images.add(image)
+            else:
+                # 새 이미지 추가
+                image_data["order"] = image_order
+                new_image = ProductImage.objects.create(**image_data, product=product)
+                updated_images.add(new_image)
+
+        # 삭제되어야 하는 이미지 찾기 및 삭제
+        for image in existing_images - updated_images:
+            image.delete()
 
 
 class ProductImageSerializer(serializers.ModelSerializer):

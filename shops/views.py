@@ -417,21 +417,22 @@ class ShopProducts(APIView):
             return section
 
     def create_variations(self, variations_data, product):
-        for variation_data in variations_data:
+        for index, variation_data in enumerate(variations_data, start=1):
             variation = Variation.objects.create(
                 name=variation_data["name"],
                 product=product,
                 is_sku_vary=variation_data["is_sku_vary"],
                 is_price_vary=variation_data.get("is_price_vary", False),
                 is_quantity_vary=variation_data.get("is_quantity_vary", False),
+                order = index,
             )
-            for option_data in variation_data.get("options", []):
+            for index, option_data in enumerate(variation_data.get("options", []), start=1):
                 VariationOption.objects.create(
-                    name=option_data["name"], variation=variation
+                    name=option_data["name"], variation=variation,  order = index,
                 )
 
     def create_variants(self, variants_data, product):
-        for variant_data in variants_data:
+        for index, variant_data in enumerate(variants_data, start=1):
             option_one, option_two = self.get_variant_options(variant_data, product)
             ProductVariant.objects.create(
                 product=product,
@@ -441,6 +442,7 @@ class ShopProducts(APIView):
                 price=variant_data.get("price", 0),
                 quantity=variant_data.get("quantity", 0),
                 is_visible=variant_data.get("is_visible", True),
+                order = index,
             )
 
     def get_variant_options(self, variant_data, product):

@@ -49,6 +49,8 @@ class ProductVariant(models.Model):
     quantity = models.PositiveIntegerField(null=True, blank=True)
     is_visible = models.BooleanField(default=True)
 
+    order = models.PositiveIntegerField()
+
     def __str__(self):
         options = filter(None, [self.option_one, self.option_two])
         option_descriptions = " x ".join(option.name for option in options)
