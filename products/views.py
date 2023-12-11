@@ -473,39 +473,3 @@ class ReviewPhotoList(APIView):
         return Response(serializer.data)
 
 
-class EditProduct(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_object(self, pk):
-        try:
-            return Product.objects.get(pk=pk)
-        except Product.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk):
-        product = self.get_object(pk)
-        serializer = serializers.EditProductSerializer(
-            product,
-            context={"reqeust": request},
-        )
-        return Response(serializer.data)
-
-    def put(self, request, pk):
-        product = self.get_object(pk)
-        # if product.shop.user != request.user:
-        #     raise PermissionDenied
-        serializer = serializers.EditProductSerializer(
-            product,
-            data=request.data,
-            partial=True,
-        )
-        if serializer.is_valid():
-            updated_product = serializer.save()
-            return Response(
-                serializers.EditProductSerializer(updated_product).data,
-            )
-        else:
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST,
-            )

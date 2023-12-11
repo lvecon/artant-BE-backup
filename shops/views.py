@@ -18,7 +18,7 @@ from product_variants.models import ProductVariant, Variation, VariationOption
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
-from products.serializers import ProductListSerializer, ProductCreateSerializer
+from products.serializers import ProductListSerializer, ProductCreateSerializer, ProductUpdateSerializer
 from favorites.serializers import FavoriteShopSerializer
 
 
@@ -533,6 +533,27 @@ class ReviewPhotos(APIView):
             "images": images,
         }
         return Response(response_data)
+
+
+
+class ProductUpdate(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def patch(self, request, shop_pk, product_pk):
+
+        # 상점이 존재하며 요청한 사용자가 상점의 소유자인지 확인
+        shop = get_object_or_404(Shop, pk=shop_pk, user=request.user)
+
+        # 상품이 해당 상점에 속해 있는지 확인
+        product = get_object_or_404(Product, pk=product_pk, shop=shop)
+
+        serializer = ProductUpdateSerializer(product, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 

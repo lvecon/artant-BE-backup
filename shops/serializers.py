@@ -167,12 +167,7 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             "id": {"read_only": True},
         }
 
-    def update(self, instance, validated_data):
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return instance
+ 
     
     def get_sections_info(self, shop):
         sections = Section.objects.filter(shop=shop).order_by('order')

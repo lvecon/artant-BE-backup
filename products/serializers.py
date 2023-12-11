@@ -1,5 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
+from django.shortcuts import get_object_or_404
 
 from favorites.models import FavoriteProduct
 from .models import (
@@ -10,6 +11,7 @@ from .models import (
 from product_variants.models import (
     ProductVariant,
 )
+from product_attributes.models import Category, Color, ProductTag
 from datetime import datetime, timedelta
 from users.serializers import TinyUserSerializer
 from product_variants.serializers import (
@@ -394,100 +396,119 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     
 
 
-class EditProductSerializer(serializers.ModelSerializer):
+class ProductUpdateSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(write_only=True, required=False)
     category = serializers.SerializerMethodField()
     subCategory = serializers.SerializerMethodField()
-    shop_name = serializers.SerializerMethodField()
-    shop_pk = serializers.SerializerMethodField()
-    shop_avatar = serializers.SerializerMethodField()
-    discount_rate = serializers.SerializerMethodField()
-    sellers = serializers.SerializerMethodField()
-    shipping_date = serializers.SerializerMethodField()
-
-    images = ImageSerializer(many=True, read_only=True)
-    colors = ColorSerializer(many=True, read_only=True)
-    video = VideoSerializer()
-    # options = VariantOptionSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
+    video = serializers.SerializerMethodField()
+    primary_color = serializers.CharField(required=False, allow_null=True)
+    secondary_color = serializers.CharField(required=False, allow_null=True)
+    tags = serializers.SerializerMethodField()
+    materials = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+    video = serializers.SerializerMethodField()
+    section = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
             "pk",
             "name",
-            "shop_pk",
-            "original_price",
-            "price",
-            "discount_rate",
-            "quantity",
-            "shipping_price",
-            "free_shipping",
-            "processing_min",
-            "processing_max",
-            "shipping_date",
-            "is_return_exchange_available",
-            "is_frame_included",
-            "colors",
-            "product_item_type",
-            "is_giftcard_available",
-            "is_gift_wrapping_available",
-            "is_customizable",
-            "images",
-            "video",
-            "thumbnail",
-            "created_at",
+            "made_by",
+            "product_type",
+            "product_creation_date",
+            "category_name",
             "category",
             "subCategory",
-            # "options",
+            "primary_color",
+            "secondary_color",
+            "tags",
+            "section",
+            "materials",
             "description",
+            "price",
+            "quantity",
+            "sku",
+            "processing_min",
+            "processing_max",
+            "shipping_price",
+            "images",
+            "video",
+            "is_personalization_enabled",
+            "is_personalization_optional",
+            "personalization_guide",
+            "variations",
+            "variants",
         )
 
-    def get_rating(self, product):
-        return product.rating()
+    def update(self, instance, validated_data):
+        # category_name 처리
+        category_name = validated_data.pop('category_name', None)
+        if category_name:
+            category = get_object_or_404(Category, name=category_name)
+            instance.category.clear()
+            instance.category.add(category)
+            # 상위 카테고리 추가 (필요한 경우)
+            if category.parent:
+                instance.category.add(category.parent)
+        
+        # primary_color 처리
+        primary_color_name = validated_data.pop('primary_color', None)
+        if primary_color_name is not None:
+            primary_color = Color.objects.filter(name=primary_color_name).first()
+            if primary_color:
+                instance.primary_color = primary_color
+            else:
+                raise serializers.ValidationError({"primary_color": "Invalid color name"})
 
-    def get_is_liked(self, product):
-        request = self.context.get("request")
-        if request:
-            if request.user.is_authenticated:
-                return FavoriteProduct.objects.filter(
-                    user=request.user,
-                    products__pk=product.pk,
-                ).exists()
-        return False
+        # secondary_color 처리
+        secondary_color_name = validated_data.pop('secondary_color', None)
+        if secondary_color_name is not None:
+            secondary_color = Color.objects.filter(name=secondary_color_name).first()
+            if secondary_color:
+                instance.secondary_color = secondary_color
+            else:
+                raise serializers.ValidationError({"secondary_color": "Invalid color name"})
+        
+        # tags 처리
+        tags_names = validated_data.pop('tags', None)
+        if tags_names is not None:
+            # 기존 태그 제거
+            instance.tags.clear()
+            # 새로운 태그 추가
+            for name in tags_names:
+                tag, created = ProductTag.objects.get_or_create(tag=name)
+                instance.tags.add(tag)
+
+        # 나머지 필드 업데이트
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
 
     def get_category(self, product):
         return product.category.get(level=2).name
 
     def get_subCategory(self, product):
         return product.category.get(level=3).name
+    
+    def get_tags(self, obj):
+        return [tag.tag for tag in obj.tags.all()]
+    
+    def get_section(self, obj):
+        return obj.section.title if obj.section else None
 
-    def get_shop_pk(self, product):
-        return product.shop.pk
+    def get_materials(self, obj):
+        return [material.name for material in obj.materials.all()]
 
-    def get_is_star_seller(self, product):
-        return product.shop.is_star_seller
-
-    def get_discount_rate(self, product):
-        if product.original_price & product.price:
-            return int((1 - product.price / product.original_price) * 100)
-        else:
-            return 0
-
-    def get_shipping_date(self, product):
-        today = datetime.now().date()  # 현재 날짜
-        processing_min = int(product.processing_min)  # 최소 처리 기간
-        processing_max = int(product.processing_max)  # 최대 처리 기간
-
-        min_shipping_date = today + timedelta(days=processing_min)
-        max_shipping_date = today + timedelta(days=processing_max)
-
-        return f"{min_shipping_date.month}월 {min_shipping_date.day}일 ~ {max_shipping_date.month}월 {max_shipping_date.day}일"
-
-    def get_cart_count(self, product):
-        count_in_carts = CartLine.objects.filter(
-            product=product,
-        ).count()
-
-        return count_in_carts
+    def get_images(self, obj):
+        images = obj.images.order_by("order").values_list("image", flat=True)
+        return list(images)
+    
+    def get_video(self, obj):
+        return obj.video.video if hasattr(obj, "video") and obj.video else None
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
