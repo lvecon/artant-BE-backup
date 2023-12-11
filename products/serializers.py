@@ -399,17 +399,19 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(write_only=True, required=False)
-    category = serializers.SerializerMethodField()
-    subCategory = serializers.SerializerMethodField()
-    
-
     primary_color = serializers.CharField(required=False, allow_null=True)
     secondary_color = serializers.CharField(required=False, allow_null=True)
+    section = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    # SerializerMethodField를 사용하여 읽기 전용 필드를 정의
+    # variations = serializers.SerializerMethodField()
+    # variants = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
+    subCategory = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     materials = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     video = serializers.SerializerMethodField()
-    section = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Product
