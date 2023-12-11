@@ -547,7 +547,7 @@ class ProductUpdate(APIView):
         # 상품이 해당 상점에 속해 있는지 확인
         product = get_object_or_404(Product, pk=product_pk, shop=shop)
 
-        serializer = ProductUpdateSerializer(product, data=request.data, partial=True)
+        serializer = ProductUpdateSerializer(product, data=request.data, partial=True, context={'request': request})
 
         if serializer.is_valid():
             serializer.save()

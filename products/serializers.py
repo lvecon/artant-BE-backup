@@ -443,6 +443,16 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
+
+        # `tags` 필드는 validated_data에 포함되지 않으므로, 별도로 처리
+        tags_list = self.context.get('request').data.get('tags')
+        if tags_list is not None:
+            instance.tags.clear()
+            for tag_name in tags_list:
+                tag, created = ProductTag.objects.get_or_create(tag=tag_name)
+                instance.tags.add(tag)
+
+
         # category_name 처리
         category_name = validated_data.pop('category_name', None)
         if category_name:
@@ -471,16 +481,6 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             else:
                 raise serializers.ValidationError({"secondary_color": "Invalid color name"})
         
-        # tags 처리
-        tags_names = validated_data.pop('tags', None)
-        if tags_names is not None:
-            # 기존 태그 제거
-            instance.tags.clear()
-            # 새로운 태그 추가
-            for name in tags_names:
-                tag, created = ProductTag.objects.get_or_create(tag=name)
-                instance.tags.add(tag)
-
         # 나머지 필드 업데이트
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
