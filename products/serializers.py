@@ -553,10 +553,17 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
     def get_materials(self, obj):
         return [material.name for material in obj.materials.all()]
 
-    def get_images(self, obj):
-        images = obj.images.order_by("order").values_list("image", flat=True)
-        return list(images)
-    
+    def get_images(self, shop):
+        images = shop.images.order_by("order")
+        return [
+            {   
+                "id": image.pk,
+                "image": image.image,
+                "order" : image.order,
+      
+            }
+            for image in images
+        ]
     def get_video(self, obj):
         return obj.video.video if hasattr(obj, "video") and obj.video else None
     

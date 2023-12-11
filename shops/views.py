@@ -541,6 +541,25 @@ class ReviewPhotos(APIView):
 class ProductUpdate(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+    def get_product(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, shop_pk, product_pk):
+        # 상점이 존재하며 요청한 사용자가 상점의 소유자인지 확인
+        shop = get_object_or_404(Shop, pk=shop_pk, user=request.user)
+
+        # 상품이 해당 상점에 속해 있는지 확인
+        product = get_object_or_404(Product, pk=product_pk, shop=shop)
+     
+        serializer = ProductUpdateSerializer(
+            product,
+            context={"reqeust": request},
+        )
+        return Response(serializer.data)
+
     def patch(self, request, shop_pk, product_pk):
 
         # 상점이 존재하며 요청한 사용자가 상점의 소유자인지 확인
