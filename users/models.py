@@ -13,13 +13,13 @@ class User(AbstractUser):
     birthday = models.DateField(blank=True, null=True)
     description = models.CharField(max_length=256, blank=True, null=True)
     default_shipping_address = models.OneToOneField(
-        "Address",
+        "ShippingAddress",
         related_name="+",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
     )
-    default_payment = models.OneToOneField(
+    default_payment_info = models.OneToOneField(
         "PaymentInfo",
         related_name="+",
         null=True,
@@ -31,9 +31,9 @@ class User(AbstractUser):
         return self.name
 
 
-class Address(models.Model):
+class ShippingAddress(models.Model):
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="addresses"
+        "users.User", on_delete=models.CASCADE, related_name="shipping_addresses"
     )
     recipient_name = models.CharField(max_length=100)  # 받는 사람
     street_name_address = models.CharField(max_length=100)  # 도로명 주소
