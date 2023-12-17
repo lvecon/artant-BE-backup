@@ -9,8 +9,6 @@ class ShopAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "shop_name",
-        "description",
-        "website_url",
     )
 
 
