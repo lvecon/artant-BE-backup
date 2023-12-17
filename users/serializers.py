@@ -40,7 +40,6 @@ class PrivateUserSerializer(ModelSerializer):
             "birthday",
             "default_shipping_address",
             "default_payment_info",
-            "address",
         )
 
     def get_shop_pk(self, user):
