@@ -39,7 +39,7 @@ class PrivateUserSerializer(ModelSerializer):
             "description",
             "birthday",
             "default_shipping_address",
-            "default_billing_address",
+            "default_payment_info",
             "address",
         )
 
