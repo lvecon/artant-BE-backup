@@ -1,11 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from users.models import Address, User
-
-
-@admin.register(Address)
-class AddressAdmin(admin.ModelAdmin):
-    list_display = ("address_name", "street_address_1", "street_address_2")
+from users.models import Address, User, PaymentInfo
 
 
 @admin.register(User)
@@ -54,4 +49,20 @@ class CustomUserAdmin(UserAdmin):
         "username",
         "email",
         "name",
+    )
+
+
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "__str__",
+    )
+
+
+@admin.register(PaymentInfo)
+class AddressAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "__str__",
     )
