@@ -6,29 +6,26 @@ from users import UserGenderChoices
 
 # TODO: 개인정보 페이지 기획 완료 시 수정
 class User(AbstractUser):
-    name = models.CharField(max_length=256, unique=True)
+    name = models.CharField(max_length=30)
     email = models.EmailField(unique=True)
     avatar = models.URLField(blank=True, null=True)
-    gender = models.CharField(
-        max_length=16, choices=UserGenderChoices.choices, null=True, default="Female"
-    )
-    birthday = models.DateField(null=True, default=datetime.date(1977, 7, 7))
-    is_confirmed = models.BooleanField(default=True)
+    gender = models.CharField(max_length=16, choices=UserGenderChoices.choices)
+    birthday = models.DateField(blank=True, null=True)
     description = models.CharField(max_length=256, blank=True, null=True)
-    default_shipping_address = models.OneToOneField(
-        "Address",
-        related_name="+",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-    )
-    default_billing_address = models.OneToOneField(
-        "Address",
-        related_name="+",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-    )
+    # default_shipping_address = models.OneToOneField(
+    #     "Address",
+    #     related_name="+",
+    #     null=True,
+    #     blank=True,
+    #     on_delete=models.SET_NULL,
+    # )
+    # default_billing_address = models.OneToOneField(
+    #     "Address",
+    #     related_name="+",
+    #     null=True,
+    #     blank=True,
+    #     on_delete=models.SET_NULL,
+    # )
 
     def __str__(self):
         return self.name

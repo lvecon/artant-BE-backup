@@ -6,20 +6,20 @@ from . import OrderStatus
 
 
 class Order(CommonModel):
-    billing_address = models.ForeignKey(
-        "users.Address",
-        related_name="+",
-        editable=False,
-        null=True,
-        on_delete=models.SET_NULL,
-    )
-    shipping_address = models.ForeignKey(
-        "users.Address",
-        related_name="+",
-        editable=False,
-        null=True,
-        on_delete=models.SET_NULL,
-    )
+    # billing_address = models.ForeignKey(
+    #     "users.Address",
+    #     related_name="+",
+    #     editable=False,
+    #     null=True,
+    #     on_delete=models.SET_NULL,
+    # )
+    # shipping_address = models.ForeignKey(
+    #     "users.Address",
+    #     related_name="+",
+    #     editable=False,
+    #     null=True,
+    #     on_delete=models.SET_NULL,
+    # )
     user = models.ForeignKey(
         "users.User",
         blank=True,

@@ -7,5 +7,5 @@ from payments.models import Payment
 class PaymentAdmin(admin.ModelAdmin):
     list_display = (
         "order",
-        "address",
+        # "address",
     )

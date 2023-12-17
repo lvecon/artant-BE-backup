@@ -1,7 +1,7 @@
 from django.db import models
 import datetime
 from common.models import CommonModel
-from users.models import Address
+
 
 # Create your models here.
 
@@ -19,16 +19,7 @@ class Shop(CommonModel):
     description_title = models.CharField(max_length=256, blank=True, null=True)
     description = models.TextField(max_length=2000, blank=True, null=True)
     announcement = models.CharField(max_length=256, blank=True, null=True)
-    expiration = models.DateField(
-        blank=True, null=True
-    )
-    address = models.OneToOneField(
-        Address,
-        related_name="+",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-    )
+    expiration = models.DateField(blank=True, null=True)
     cancellation = models.BooleanField(default=True)
     shop_policy_updated_at = models.DateField(
         blank=True, null=True, default=datetime.date.today

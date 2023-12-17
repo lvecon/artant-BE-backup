@@ -9,7 +9,6 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -128,25 +127,10 @@ class Migration(migrations.Migration):
                 ),
                 ("is_staff", models.BooleanField(default=False)),
                 ("is_active", models.BooleanField(default=True)),
-                ("is_confirmed", models.BooleanField(default=True)),
-                (
-                    "description",
-                    models.CharField(blank=True, max_length=256, null=True),
-                ),
                 (
                     "address",
                     models.ManyToManyField(
                         blank=True, related_name="+", to="users.address"
-                    ),
-                ),
-                (
-                    "default_billing_address",
-                    models.OneToOneField(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="+",
-                        to="users.address",
                     ),
                 ),
                 (

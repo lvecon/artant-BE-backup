@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from users.models import Address, User, PaymentInfo
+from users.models import User, PaymentInfo, Address
 
 
 @admin.register(User)
@@ -18,6 +18,8 @@ class CustomUserAdmin(UserAdmin):
                     "gender",
                     "birthday",
                     "description",
+                    # "default_shipping_address",
+                    # "default_payment_info",
                 ),
                 "classes": ("wide",),
             },
@@ -26,7 +28,6 @@ class CustomUserAdmin(UserAdmin):
             "Permissions",
             {
                 "fields": (
-                    "is_confirmed",
                     "is_active",
                     "is_staff",
                     "is_superuser",
@@ -54,14 +55,11 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
-    list_display = (
-        "user",
-        "__str__",
-    )
+    list_display = ("__str__",)
 
 
 @admin.register(PaymentInfo)
-class AddressAdmin(admin.ModelAdmin):
+class PaymentInfoAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "__str__",
