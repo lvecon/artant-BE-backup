@@ -20,6 +20,7 @@ class Shop(CommonModel):
     description = models.TextField(max_length=2000, blank=True, null=True)
     announcement = models.CharField(max_length=256, blank=True, null=True)
     expiration = models.DateField(blank=True, null=True)
+
     cancellation = models.BooleanField(default=True)
     shop_policy_updated_at = models.DateField(
         blank=True, null=True, default=datetime.date.today

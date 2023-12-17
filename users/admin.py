@@ -19,7 +19,7 @@ class CustomUserAdmin(UserAdmin):
                     "birthday",
                     "description",
                     "default_shipping_address",
-                    "default_payment_info",
+                    "default_payment",
                 ),
                 "classes": ("wide",),
             },
