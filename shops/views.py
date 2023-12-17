@@ -18,7 +18,11 @@ from product_variants.models import ProductVariant, Variation, VariationOption
 from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
-from products.serializers import ProductListSerializer, ProductCreateSerializer, ProductUpdateSerializer
+from products.serializers import (
+    ProductListSerializer,
+    ProductCreateSerializer,
+    ProductUpdateSerializer,
+)
 from favorites.serializers import FavoriteShopSerializer
 
 
@@ -108,23 +112,27 @@ class ShopDetail(APIView):
     def patch(self, request, pk):
         shop = self.get_object(pk)
         if shop.user != request.user:
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
+            )
 
-        sections_data = request.data.get('sections')
+        sections_data = request.data.get("sections")
         if sections_data:
             # 섹션의 title 중복 확인 TODO: 프론트에서 확인할지 논의
-            titles = [section.get('title') for section in sections_data]
+            titles = [section.get("title") for section in sections_data]
             if len(titles) != len(set(titles)):
                 return Response(
                     {"error": "Duplicate section titles found."},
                     status=status.HTTP_400_BAD_REQUEST,
-            )
-        images_data = request.data.get('images')
-       
-        serializer = serializers.ShopUpdateSerializer(shop, data=request.data, partial=True)
+                )
+        images_data = request.data.get("images")
+
+        serializer = serializers.ShopUpdateSerializer(
+            shop, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
-            #섹션 정보 업데이트 (sections 키가 있는 경우에만)
+            # 섹션 정보 업데이트 (sections 키가 있는 경우에만)
             if sections_data is not None:
                 self.update_sections(sections_data, shop)
             # 이미지 정보 업데이트 (images 키가 있는 경우에만)
@@ -132,20 +140,19 @@ class ShopDetail(APIView):
                 self.update_images(images_data, shop)
 
             # 비디오 정보 업데이트
-            video_url = request.data.get('video', None)
+            video_url = request.data.get("video", None)
             if video_url is not None:
-                if video_url == "" and hasattr(shop, 'video'):
+                if video_url == "" and hasattr(shop, "video"):
                     # 비디오가 ""이고 shop에 비디오가 있는 경우, 비디오 삭제
                     shop.video.delete()
                 elif video_url:
                     # 비디오 URL이 존재하면 기존 비디오 업데이트 또는 새 비디오 생성
-                    if hasattr(shop, 'video'):
+                    if hasattr(shop, "video"):
                         shop.video.video = video_url
                         shop.video.save()
                     else:
                         ShopVideo.objects.create(video=video_url, shop=shop)
             # 'video' 필드가 없거나 값이 None인 경우 아무것도 하지 않음
-
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -155,7 +162,6 @@ class ShopDetail(APIView):
         shop.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
 
     def update_sections(self, sections_data, shop):
         existing_sections = set(shop.sections.all())
@@ -170,9 +176,11 @@ class ShopDetail(APIView):
                 # 기존 섹션 업데이트
                 section = shop.sections.get(id=section_id)
                 for key, value in section_data.items():
-                    if key != "order":  # Skip updating order from request data. TODO: is it necessary?
+                    if (
+                        key != "order"
+                    ):  # Skip updating order from request data. TODO: is it necessary?
                         setattr(section, key, value)
-                section.order = section_order 
+                section.order = section_order
                 section.save()
                 updated_sections.add(section)
             else:
@@ -197,7 +205,9 @@ class ShopDetail(APIView):
                 # 기존 이미지 업데이트
                 image = shop.images.get(id=image_id)
                 for key, value in image_data.items():
-                    if key != "order":  # Skip updating order from request data TODO: is it necessary?
+                    if (
+                        key != "order"
+                    ):  # Skip updating order from request data TODO: is it necessary?
                         setattr(image, key, value)
                 image.order = image_order
                 image.save()
@@ -211,8 +221,6 @@ class ShopDetail(APIView):
         # 삭제되어야 하는 이미지 찾기 및 삭제
         for image in existing_images - updated_images:
             image.delete()
-
-
 
 
 class ShopReviews(APIView):
@@ -297,7 +305,7 @@ class ShopProducts(APIView):
             pass
         elif section_title == "할인 중":
             # 할인 중인 상품만 필터링합니다 TODO: is_discount field 추가되면 수정
-            products = products.filter(original_price__gt=F('price'))
+            products = products.filter(original_price__gt=F("price"))
         elif section_title:
             section = shop.sections.filter(title=section_title).first()
             if section:
@@ -306,7 +314,6 @@ class ShopProducts(APIView):
                 return Response(
                     {"error": "section not found"}, status=status.HTTP_400_BAD_REQUEST
                 )
-
 
         try:
             page = int(request.query_params.get("page", 1))
@@ -331,7 +338,7 @@ class ShopProducts(APIView):
         }
 
         return Response(response_data)
-    
+
     def post(self, request, shop_pk):
         user = request.user
         # 사용자의 상점과 요청된 상점 ID가 일치하는지 확인
@@ -340,13 +347,12 @@ class ShopProducts(APIView):
                 {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
             )
 
-      
         data = request.data.copy()
         data["shop"] = shop_pk
-        
+
         serializer = ProductCreateSerializer(data=data)
         if serializer.is_valid():
-             # 카테고리와 색상 처리
+            # 카테고리와 색상 처리
             category = self.get_category(request)
             primary_color, secondary_color = self.get_colors(request)
 
@@ -355,14 +361,25 @@ class ShopProducts(APIView):
 
             # 섹션 처리 및 상품에 섹션 정보 추가
             self.set_section(data, shop_pk, product)
-            
+
             # Variation, Variant, Material, Tag, Image
-            self.create_variations(variations_data=request.data.get("variations", []), product=product)
-            self.create_variants(variants_data=request.data.get("variants", []), product=product)
-            self.set_materials_and_tags(materials_data=request.data.get("materials", []),
-                                        tags_data=request.data.get("tags", []), product=product)
-            self.process_images(images_data=request.data.get("images", []), product=product)
-            self.create_video(video_url=request.data.get("video", None), product=product)
+            self.create_variations(
+                variations_data=request.data.get("variations", []), product=product
+            )
+            self.create_variants(
+                variants_data=request.data.get("variants", []), product=product
+            )
+            self.set_materials_and_tags(
+                materials_data=request.data.get("materials", []),
+                tags_data=request.data.get("tags", []),
+                product=product,
+            )
+            self.process_images(
+                images_data=request.data.get("images", []), product=product
+            )
+            self.create_video(
+                video_url=request.data.get("video", None), product=product
+            )
             # 카테고리, 색상 추가 및 저장
             product.category.add(category.id)
             product.primary_color = primary_color
@@ -409,7 +426,12 @@ class ShopProducts(APIView):
                 title=section_title, shop_id=shop_pk
             )
             if created:
-                max_order = Section.objects.filter(shop_id=shop_pk).aggregate(Max('order'))['order__max'] or 0
+                max_order = (
+                    Section.objects.filter(shop_id=shop_pk).aggregate(Max("order"))[
+                        "order__max"
+                    ]
+                    or 0
+                )
                 section.order = max_order + 1
                 section.save()
             product.section = section
@@ -424,11 +446,15 @@ class ShopProducts(APIView):
                 is_sku_vary=variation_data["is_sku_vary"],
                 is_price_vary=variation_data.get("is_price_vary", False),
                 is_quantity_vary=variation_data.get("is_quantity_vary", False),
-                order = index,
+                order=index,
             )
-            for index, option_data in enumerate(variation_data.get("options", []), start=1):
+            for index, option_data in enumerate(
+                variation_data.get("options", []), start=1
+            ):
                 VariationOption.objects.create(
-                    name=option_data["name"], variation=variation,  order = index,
+                    name=option_data["name"],
+                    variation=variation,
+                    order=index,
                 )
 
     def create_variants(self, variants_data, product):
@@ -442,7 +468,7 @@ class ShopProducts(APIView):
                 price=variant_data.get("price", 0),
                 quantity=variant_data.get("quantity", 0),
                 is_visible=variant_data.get("is_visible", True),
-                order = index,
+                order=index,
             )
 
     def get_variant_options(self, variant_data, product):
@@ -456,7 +482,7 @@ class ShopProducts(APIView):
                 name=option_name,
                 variation__product=product,
             ).first()
-        
+
     def set_materials_and_tags(self, materials_data, tags_data, product):
         for material_name in materials_data:
             material, _ = Material.objects.get_or_create(name=material_name)
@@ -467,13 +493,13 @@ class ShopProducts(APIView):
 
     def process_images(self, images_data, product):
         thumbnail_url = None
-        for image_data in images_data:
+        for index, image_data in enumerate(images_data, start=1):
             image_obj = ProductImage.objects.create(
                 product=product,
-                image=image_data.get("image"),
-                order=image_data.get("order"),
+                image=image_data,
+                order=index,
             )
-            if image_obj.order == 1:
+            if index == 1:
                 thumbnail_url = image_obj.image
 
         if thumbnail_url:
@@ -537,7 +563,6 @@ class ReviewPhotos(APIView):
         return Response(response_data)
 
 
-
 class ProductUpdate(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -553,7 +578,7 @@ class ProductUpdate(APIView):
 
         # 상품이 해당 상점에 속해 있는지 확인
         product = get_object_or_404(Product, pk=product_pk, shop=shop)
-     
+
         serializer = ProductUpdateSerializer(
             product,
             context={"reqeust": request},
@@ -561,14 +586,15 @@ class ProductUpdate(APIView):
         return Response(serializer.data)
 
     def patch(self, request, shop_pk, product_pk):
-
         # 상점이 존재하며 요청한 사용자가 상점의 소유자인지 확인
         shop = get_object_or_404(Shop, pk=shop_pk, user=request.user)
 
         # 상품이 해당 상점에 속해 있는지 확인
         product = get_object_or_404(Product, pk=product_pk, shop=shop)
 
-        serializer = ProductUpdateSerializer(product, data=request.data, partial=True, context={'request': request})
+        serializer = ProductUpdateSerializer(
+            product, data=request.data, partial=True, context={"request": request}
+        )
 
         if serializer.is_valid():
             serializer.save()
@@ -576,10 +602,6 @@ class ProductUpdate(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
-    
 
 # 상품 생성 Or 편집 화면에서 section 생성
 class Sections(APIView):
@@ -596,7 +618,9 @@ class Sections(APIView):
         serializer = serializers.SectionSerializer(data=request.data)
         if serializer.is_valid():
             # 동일한 제목의 섹션이 이미 있는지 확인
-            if Section.objects.filter(shop_id=shop_pk, title=serializer.validated_data["title"]).exists():
+            if Section.objects.filter(
+                shop_id=shop_pk, title=serializer.validated_data["title"]
+            ).exists():
                 return Response(
                     {"error": "A section with this title already exists."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -607,4 +631,3 @@ class Sections(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-

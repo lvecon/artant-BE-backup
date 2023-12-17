@@ -34,6 +34,8 @@ class Product(CommonModel):
     tags = models.ManyToManyField(
         "product_attributes.ProductTag",
         related_name="products",
+        null=True,
+        blank=True,
     )
     made_by = models.CharField(
         max_length=140,
