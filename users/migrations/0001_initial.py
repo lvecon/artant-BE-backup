@@ -17,34 +17,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="Address",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                ("user_name", models.CharField(max_length=256)),
-                (
-                    "address_name",
-                    models.CharField(blank=True, max_length=256, null=True),
-                ),
-                ("cell_phone_number", models.CharField(max_length=16)),
-                (
-                    "phone_number",
-                    models.CharField(blank=True, max_length=16, null=True),
-                ),
-                ("postal_code", models.CharField(max_length=6)),
-                ("street_address_1", models.CharField(max_length=256)),
-                ("street_address_2", models.CharField(max_length=256)),
-                ("note", models.CharField(blank=True, max_length=256, null=True)),
-            ],
-        ),
-        migrations.CreateModel(
             name="User",
             fields=[
                 (

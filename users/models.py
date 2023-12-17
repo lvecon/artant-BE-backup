@@ -12,20 +12,20 @@ class User(AbstractUser):
     gender = models.CharField(max_length=16, choices=UserGenderChoices.choices)
     birthday = models.DateField(blank=True, null=True)
     description = models.CharField(max_length=256, blank=True, null=True)
-    # default_shipping_address = models.OneToOneField(
-    #     "Address",
-    #     related_name="+",
-    #     null=True,
-    #     blank=True,
-    #     on_delete=models.SET_NULL,
-    # )
-    # default_billing_address = models.OneToOneField(
-    #     "Address",
-    #     related_name="+",
-    #     null=True,
-    #     blank=True,
-    #     on_delete=models.SET_NULL,
-    # )
+    default_shipping_address = models.OneToOneField(
+        "Address",
+        related_name="+",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    default_payment = models.OneToOneField(
+        "PaymentInfo",
+        related_name="+",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return self.name
