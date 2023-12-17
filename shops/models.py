@@ -50,7 +50,7 @@ class Section(CommonModel):
         on_delete=models.CASCADE,
         related_name="sections",
     )
-    order = models.PositiveIntegerField()
+    order = models.PositiveIntegerField(default=1)
 
     def __str__(self):
         return self.title

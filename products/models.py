@@ -31,7 +31,10 @@ class Product(CommonModel):
         "product_attributes.Category",
         related_name="product",
     )
-
+    tags = models.ManyToManyField(
+        "product_attributes.ProductTag",
+        related_name="products",
+    )
     made_by = models.CharField(
         max_length=140,
         choices=ProductMadeByChoices.choices,
@@ -72,7 +75,7 @@ class Product(CommonModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="products",
+        related_name="section",
     )
 
     processing_min = models.CharField(max_length=32, default=3)

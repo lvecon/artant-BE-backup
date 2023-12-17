@@ -16,5 +16,4 @@ urlpatterns = [
     path("<int:pk>/images", views.ProductImages.as_view()),
     path("<int:pk>/videos", views.ProductVideos.as_view()),
     path("images/<int:pk>", views.ProductImageDetail.as_view()),
-    path("edit-product/<int:product_pk>", views.EditProduct.as_view()),
 ]

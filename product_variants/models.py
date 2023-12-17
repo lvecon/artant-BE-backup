@@ -9,6 +9,7 @@ class Variation(models.Model):
     is_sku_vary = models.BooleanField(default=False)
     is_price_vary = models.BooleanField(default=False)
     is_quantity_vary = models.BooleanField(default=False)
+    order = models.PositiveIntegerField()
 
     def __str__(self):
         return f"{self.name} : {self.product.name}"
@@ -19,7 +20,8 @@ class VariationOption(models.Model):
     variation = models.ForeignKey(
         Variation, on_delete=models.CASCADE, null=True, related_name="options"
     )
-
+    order = models.PositiveIntegerField()
+    
     def __str__(self):
         return f"{self.variation.name} - {self.name} : {self.variation.product.name}"
 
@@ -46,6 +48,8 @@ class ProductVariant(models.Model):
     price = models.PositiveIntegerField(null=True, blank=True)
     quantity = models.PositiveIntegerField(null=True, blank=True)
     is_visible = models.BooleanField(default=True)
+
+    order = models.PositiveIntegerField()
 
     def __str__(self):
         options = filter(None, [self.option_one, self.option_two])

@@ -37,10 +37,9 @@ class Color(models.Model):
 
 class ProductTag(models.Model):
     tag = models.CharField(max_length=32, unique=True)
-    product = models.ManyToManyField(
-        "products.Product",
-        related_name="tags",
-    )
+
+    def __str__(self):
+        return f"{self.tag}"
 
 
 class Material(models.Model):
