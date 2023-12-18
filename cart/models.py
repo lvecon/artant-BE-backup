@@ -7,8 +7,6 @@ from common.models import CommonModel
 class Cart(CommonModel):
     user = models.OneToOneField(
         "users.User",
-        blank=True,
-        null=True,
         on_delete=models.CASCADE,
     )
 
@@ -33,9 +31,11 @@ class CartLine(CommonModel):
         related_name="cartlines",
         null=True,
         blank=True,
-    )
-    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
-    personalization = models.CharField(max_length=255, null=True, blank=True)
+    )  # 선택 옵션 정보
+    quantity = models.PositiveIntegerField(
+        default=1, validators=[MinValueValidator(1)]
+    )  # 담은 수량
+    personalization = models.CharField(max_length=255, null=True, blank=True)  # 개인화 정보
 
     def __str__(self):
         return f"{self.product_variant} : {self.quantity} in {self.cart.user}'s cart"
