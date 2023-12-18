@@ -233,7 +233,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         # 각각의 옵션 카테고리별로 집합을 리스트 형태로 변환
         return [{key: value} for key, value in separate_options_dict.items()]
 
-    def rating(product):
+    def get_rating(self, product):
         count = product.reviews.count()
         if count == 0:
             return 0
@@ -243,10 +243,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                 total_rating += review["rating"]
             return round(total_rating / count, 2)
 
-    def rating_count(product):
+    def get_rating_count(self, product):
         return product.reviews.count()
 
-    def free_shipping(product):
+    def get_free_shipping(self, product):
         return product.shipping_price == "0"
 
 
@@ -257,7 +257,6 @@ class ProductListSerializer(serializers.ModelSerializer):
     shop_name = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
-    is_discount = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     free_shipping = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
@@ -327,8 +326,21 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
 
-    def is_discount(product):
-        return product.original_price > product.price
+    def get_rating(self, product):
+        count = product.reviews.count()
+        if count == 0:
+            return 0
+        else:
+            total_rating = 0
+            for review in product.reviews.all().values("rating"):
+                total_rating += review["rating"]
+            return round(total_rating / count, 2)
+
+    def get_rating_count(self, product):
+        return product.reviews.count()
+
+    def get_free_shipping(self, product):
+        return product.shipping_price == "0"
 
 
 class TinyProductSerializer(serializers.ModelSerializer):
@@ -349,22 +361,6 @@ class TinyProductSerializer(serializers.ModelSerializer):
             return int((1 - product.price / product.original_price) * 100)
         else:
             return 0
-
-    def rating(product):
-        count = product.reviews.count()
-        if count == 0:
-            return 0
-        else:
-            total_rating = 0
-            for review in product.reviews.all().values("rating"):
-                total_rating += review["rating"]
-            return round(total_rating / count, 2)
-
-    def rating_count(product):
-        return product.reviews.count()
-
-    def free_shipping(product):
-        return product.shipping_price == "0"
 
 
 # 유효성 검사 더 구체적으로 가능하게 하기 TODO: validate method 추가
