@@ -22,8 +22,11 @@ class Product(CommonModel):
     )
     name = models.CharField(max_length=140)
     description = models.TextField()
+
     price = models.PositiveIntegerField()
     original_price = models.PositiveIntegerField(null=True, blank=True)
+    is_discount = models.BooleanField(default=False)
+
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
     sku = models.CharField(max_length=140, null=True, blank=True)
     category = models.ManyToManyField(
@@ -113,6 +116,15 @@ class Product(CommonModel):
 
     def __iter__(self):
         return iter(self.tag)
+
+    def save(self, *args, **kwargs):
+        # 할인 여부를 설정
+        if self.original_price and self.price < self.original_price:
+            self.is_discounted = True
+        else:
+            self.is_discounted = False
+
+        super().save(*args, **kwargs)
 
 
 # TODO: 할인 적용 방식 기획 나오면 수정
