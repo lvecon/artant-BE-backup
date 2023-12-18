@@ -83,7 +83,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     options = serializers.SerializerMethodField()
     separate_options = serializers.SerializerMethodField()
-    free_shipping = serializers.SerializerMethodField()
+
     rating = serializers.SerializerMethodField()
     rating_count = serializers.SerializerMethodField()
 
@@ -104,7 +104,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "cart_count",
             "quantity",
             "shipping_price",
-            "free_shipping",
+            "is_free_shipping",
             "processing_min",
             "processing_max",
             "shipping_date",
@@ -240,9 +240,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_rating_count(self, product):
         return product.reviews.count()
 
-    def get_free_shipping(self, product):
-        return product.shipping_price == "0"
-
 
 class ProductListSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
@@ -251,7 +248,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     shop_name = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
-    free_shipping = serializers.SerializerMethodField()
+
     rating = serializers.SerializerMethodField()
     rating_count = serializers.SerializerMethodField()
 
@@ -268,7 +265,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "discount_rate",
             "rating",
             "rating_count",
-            "free_shipping",
+            "is_free_shipping",
             "is_discount",
             "tags",
             # "is_frame_included",
@@ -325,9 +322,6 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_rating_count(self, product):
         return product.reviews.count()
-
-    def get_free_shipping(self, product):
-        return product.shipping_price == "0"
 
 
 class TinyProductSerializer(serializers.ModelSerializer):

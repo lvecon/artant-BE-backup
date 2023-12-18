@@ -8,6 +8,8 @@ from . import (
     ProductMadeByChoices,
     ProductTypeChoices,
     ProductItemTypeChoices,
+    ProductLengthUnitChoices,
+    ProductWeightUnitChoices,
 )
 
 from product_attributes.models import Color
@@ -20,16 +22,18 @@ class Product(CommonModel):
         on_delete=models.CASCADE,
         related_name="products",
     )
+    # 기본 정보
     name = models.CharField(max_length=140)
     description = models.TextField()
+    thumbnail = models.URLField()
 
+    # 상품 가격
     price = models.PositiveIntegerField()
     original_price = models.PositiveIntegerField(null=True, blank=True)
     is_discount = models.BooleanField(default=False)
     discount_rate = models.IntegerField(blank=True, null=True)
 
-    quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
-    sku = models.CharField(max_length=140, null=True, blank=True)
+    # 상품 속성
     category = models.ManyToManyField(
         "product_attributes.Category",
         related_name="product",
@@ -40,6 +44,15 @@ class Product(CommonModel):
         null=True,
         blank=True,
     )
+    materials = models.ManyToManyField("product_attributes.Material", blank=True)
+    section = models.ForeignKey(
+        "shops.Section",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="section",
+    )
+
     made_by = models.CharField(
         max_length=140,
         choices=ProductMadeByChoices.choices,
@@ -60,6 +73,7 @@ class Product(CommonModel):
         choices=ProductItemTypeChoices.choices,
         default="Handmade",
     )
+
     primary_color = models.ForeignKey(
         Color,
         on_delete=models.SET_NULL,
@@ -74,38 +88,41 @@ class Product(CommonModel):
         blank=True,
         related_name="secondary_color_products",
     )
-    materials = models.ManyToManyField("product_attributes.Material", blank=True)
-    section = models.ForeignKey(
-        "shops.Section",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="section",
-    )
 
+    # 배송 정보
     processing_min = models.CharField(max_length=32, default=3)
     processing_max = models.CharField(max_length=32, default=7)
-    shipping_price = models.CharField(max_length=32, default=0)
-    item_weight = models.CharField(max_length=32, null=True, blank=True)
-    item_weight_unit = models.CharField(max_length=32, null=True, blank=True)
-    item_length = models.CharField(max_length=32, null=True, blank=True, default=20)
-    item_width = models.CharField(max_length=32, null=True, blank=True, default=60)
-    item_height = models.CharField(max_length=32, null=True, blank=True, default=90)
+    shipping_price = models.PositiveIntegerField(default=0)
+    is_free_shipping = models.BooleanField(default=False)
 
-    has_variations = models.BooleanField(default=False)
-    thumbnail = models.URLField()
+    # 상품 무게, 사이즈 TODO: DecimalField로 할지
+    item_weight = models.IntegerField(null=True, blank=True)
+    item_weight_unit = models.CharField(
+        max_length=15, choices=ProductWeightUnitChoices.choices, null=True, blank=True
+    )
+    item_length = models.IntegerField(null=True, blank=True)
+    item_width = models.IntegerField(null=True, blank=True)
+    item_height = models.IntegerField(null=True, blank=True)
+    item_length_unit = models.CharField(
+        max_length=15, choices=ProductLengthUnitChoices.choices, null=True, blank=True
+    )
+
+    # 기타 정보
+    quantity = models.PositiveIntegerField(null=True, blank=True, default=1)  # 재고
+    sku = models.CharField(max_length=140, null=True, blank=True)  # 재고 관리 단위
+    has_variations = models.BooleanField(default=False)  # 옵션
     order_count = models.IntegerField(blank=True, default=0)
 
-    is_best_seller = models.BooleanField(default=False)
+    is_best_seller = models.BooleanField(default=False)  # 판매량 TOP
+    is_artant_choice = models.BooleanField(default=False)  # 아트앤트 추천
     is_return_exchange_available = models.BooleanField(default=False)
     is_frame_included = models.BooleanField(default=False)
     is_giftcard_available = models.BooleanField(default=False)
     is_gift_wrapping_available = models.BooleanField(default=False)
     is_customizable = models.BooleanField(default=False)
-    is_artant_star = models.BooleanField(default=False)
-    is_artant_choice = models.BooleanField(default=False)
     is_digital = models.BooleanField(default=False)
 
+    # 개인화
     is_personalization_enabled = models.BooleanField(default=False)
     is_personalization_optional = models.BooleanField(default=False)
     personalization_guide = models.CharField(max_length=32, null=True, blank=True)
@@ -114,9 +131,6 @@ class Product(CommonModel):
 
     def __str__(self):
         return self.name
-
-    def __iter__(self):
-        return iter(self.tag)
 
     def save(self, *args, **kwargs):
         # 할인 여부를 설정
@@ -128,6 +142,9 @@ class Product(CommonModel):
         else:
             self.is_discount = False
             self.discount_rate = 0
+
+        # 무료 배송 여부
+        self.is_free_shipping = self.shipping_price == 0
 
         super().save(*args, **kwargs)
 
