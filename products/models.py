@@ -26,6 +26,7 @@ class Product(CommonModel):
     price = models.PositiveIntegerField()
     original_price = models.PositiveIntegerField(null=True, blank=True)
     is_discount = models.BooleanField(default=False)
+    discount_rate = models.IntegerField(blank=True, null=True)
 
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
     sku = models.CharField(max_length=140, null=True, blank=True)
@@ -120,9 +121,13 @@ class Product(CommonModel):
     def save(self, *args, **kwargs):
         # 할인 여부를 설정
         if self.original_price and self.price < self.original_price:
-            self.is_discounted = True
+            self.is_discount = True
+            self.discount_rate = round(
+                (self.original_price - self.price) / self.original_price * 100
+            )
         else:
-            self.is_discounted = False
+            self.is_discount = False
+            self.discount_rate = 0
 
         super().save(*args, **kwargs)
 

@@ -70,7 +70,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     shop_name = serializers.SerializerMethodField()
     shop_pk = serializers.SerializerMethodField()
     shop_avatar = serializers.SerializerMethodField()
-    discount_rate = serializers.SerializerMethodField()
+
     shop_owner = serializers.SerializerMethodField()
     shipping_date = serializers.SerializerMethodField()
     cart_count = serializers.SerializerMethodField()
@@ -173,12 +173,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
 
-    def get_discount_rate(self, product):
-        if product.original_price & product.price:
-            return int((1 - product.price / product.original_price) * 100)
-        else:
-            return 0
-
     def get_shipping_date(self, product):
         today = datetime.now().date()  # 현재 날짜
         processing_min = int(product.processing_min)  # 최소 처리 기간
@@ -255,7 +249,6 @@ class ProductListSerializer(serializers.ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
-    discount_rate = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     free_shipping = serializers.SerializerMethodField()
@@ -317,12 +310,6 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_tags(self, obj):
         return obj.tags.values_list("tag", flat=True)
 
-    def get_discount_rate(self, product):
-        if product.original_price & product.price:
-            return int((1 - product.price / product.original_price) * 100)
-        else:
-            return 0
-
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
 
@@ -344,8 +331,6 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 
 class TinyProductSerializer(serializers.ModelSerializer):
-    discount_rate = serializers.SerializerMethodField()
-
     class Meta:
         model = Product
         fields = (
@@ -355,12 +340,6 @@ class TinyProductSerializer(serializers.ModelSerializer):
             "price",
             "discount_rate",
         )
-
-    def get_discount_rate(self, product):
-        if product.original_price & product.price:
-            return int((1 - product.price / product.original_price) * 100)
-        else:
-            return 0
 
 
 # 유효성 검사 더 구체적으로 가능하게 하기 TODO: validate method 추가
