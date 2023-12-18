@@ -48,6 +48,21 @@ class PrivateUserSerializer(ModelSerializer):
         )
 
 
+class PublicUserSerializer(ModelSerializer):
+    shop = MyShopSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            "pk",
+            "username",
+            "email",
+            "avatar",
+            "description",
+            "shop",
+        )
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -63,25 +78,6 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar",
         ]  # Include other relevant fields
         extra_kwargs = {"password": {"write_only": True}}
-
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with that email already exists.")
-        return value
-
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError(
-                "A user with that username already exists."
-            )
-        return value
-
-    def validate_name(self, value):
-        if User.objects.filter(name=value).exists():
-            raise serializers.ValidationError(
-                "A user with that nickname already exists."
-            )
-        return value
 
     def create(self, validated_data):
         user = User.objects.create(
