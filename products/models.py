@@ -15,7 +15,7 @@ from . import (
 from product_attributes.models import Color
 
 
-# TODO: 리뷰 수, 별점 관리 방법. 필드? 함수? / 할인가 관리방법 미정
+# TODO: 리뷰 수, 별점 관리 방법. 필드? 함수? / 할인가 관리방법
 class Product(CommonModel):
     shop = models.ForeignKey(
         "shops.Shop",
@@ -31,7 +31,7 @@ class Product(CommonModel):
     price = models.PositiveIntegerField()
     original_price = models.PositiveIntegerField(null=True, blank=True)
     is_discount = models.BooleanField(default=False)
-    discount_rate = models.IntegerField(blank=True, null=True)
+    discount_rate = models.PositiveIntegerField(blank=True, null=True)
 
     # 상품 속성
     category = models.ManyToManyField(
@@ -96,13 +96,13 @@ class Product(CommonModel):
     is_free_shipping = models.BooleanField(default=False)
 
     # 상품 무게, 사이즈 TODO: DecimalField로 할지
-    item_weight = models.IntegerField(null=True, blank=True)
+    item_weight = models.PositiveIntegerField(null=True, blank=True)
     item_weight_unit = models.CharField(
         max_length=15, choices=ProductWeightUnitChoices.choices, null=True, blank=True
     )
-    item_length = models.IntegerField(null=True, blank=True)
-    item_width = models.IntegerField(null=True, blank=True)
-    item_height = models.IntegerField(null=True, blank=True)
+    item_length = models.PositiveIntegerField(null=True, blank=True)
+    item_width = models.PositiveIntegerField(null=True, blank=True)
+    item_height = models.PositiveIntegerField(null=True, blank=True)
     item_length_unit = models.CharField(
         max_length=15, choices=ProductLengthUnitChoices.choices, null=True, blank=True
     )
@@ -111,7 +111,7 @@ class Product(CommonModel):
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)  # 재고
     sku = models.CharField(max_length=140, null=True, blank=True)  # 재고 관리 단위
     has_variations = models.BooleanField(default=False)  # 옵션
-    order_count = models.IntegerField(blank=True, default=0)
+    order_count = models.PositiveIntegerField(blank=True, default=0)
 
     is_best_seller = models.BooleanField(default=False)  # 판매량 TOP
     is_artant_choice = models.BooleanField(default=False)  # 아트앤트 추천
@@ -133,7 +133,7 @@ class Product(CommonModel):
         return self.name
 
     def save(self, *args, **kwargs):
-        # 할인 여부를 설정
+        # 할인 여부, original_price 설정. TODO: 할인 적용 방식 기획 나오면 수정
         if self.original_price and self.price < self.original_price:
             self.is_discount = True
             self.discount_rate = round(
@@ -142,6 +142,7 @@ class Product(CommonModel):
         else:
             self.is_discount = False
             self.discount_rate = 0
+            self.original_price = self.price
 
         # 무료 배송 여부
         self.is_free_shipping = self.shipping_price == 0
@@ -149,11 +150,11 @@ class Product(CommonModel):
         super().save(*args, **kwargs)
 
 
-# TODO: 할인 적용 방식 기획 나오면 수정
-@receiver(pre_save, sender=Product)
-def set_original_price(sender, instance, **kwargs):
-    if instance.original_price is None or instance.price > instance.original_price:
-        instance.original_price = instance.price
+# # TODO: 할인 적용 방식 기획 나오면 수정. pre_save 신호 처리, save 중 선택
+# @receiver(pre_save, sender=Product)
+# def set_original_price(sender, instance, **kwargs):
+#     if instance.original_price is None or instance.price > instance.original_price:
+#         instance.original_price = instance.price
 
 
 class ProductImage(CommonModel):
