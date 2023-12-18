@@ -61,7 +61,7 @@ class Products(APIView):
         if category_type and category_type != "모든작품":
             q &= Q(category__name=category_type)
         if tag:
-            q &= Q(tags__tag=tag)
+            q &= Q(tags__name=tag)
 
         if price_lower_range != 0 or price_upper_range != 10000000:
             q &= Q(price__range=(price_lower_range, price_upper_range))
@@ -471,5 +471,3 @@ class ReviewPhotoList(APIView):
         )
 
         return Response(serializer.data)
-
-

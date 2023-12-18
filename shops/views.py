@@ -488,7 +488,7 @@ class ShopProducts(APIView):
             material, _ = Material.objects.get_or_create(name=material_name)
             product.materials.add(material)
         for tag_name in tags_data:
-            tag, _ = ProductTag.objects.get_or_create(tag=tag_name)
+            tag, _ = ProductTag.objects.get_or_create(name=tag_name)
             product.tags.add(tag)
 
     def process_images(self, images_data, product):

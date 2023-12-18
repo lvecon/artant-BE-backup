@@ -295,7 +295,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         return product.shop.shop_name
 
     def get_tags(self, obj):
-        return obj.tags.values_list("tag", flat=True)
+        return obj.tags.values_list("name", flat=True)
 
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
@@ -382,7 +382,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         return [category.name for category in obj.category.all()]
 
     def get_tags(self, obj):
-        return [tag.tag for tag in obj.tags.all()]
+        return [tag.name for tag in obj.tags.all()]
 
     def get_section(self, obj):
         return obj.section.title if obj.section else None
@@ -452,7 +452,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         if tags_list is not None:
             instance.tags.clear()
             for tag_name in tags_list:
-                tag, created = ProductTag.objects.get_or_create(tag=tag_name)
+                tag, created = ProductTag.objects.get_or_create(name=tag_name)
                 instance.tags.add(tag)
 
         materials_list = self.context.get("request").data.get("materials")
@@ -547,7 +547,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         return product.category.get(level=3).name
 
     def get_tags(self, obj):
-        return [tag.tag for tag in obj.tags.all()]
+        return [tag.name for tag in obj.tags.all()]
 
     def get_section(self, obj):
         return obj.section.title if obj.section else None
