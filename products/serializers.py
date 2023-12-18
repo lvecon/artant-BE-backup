@@ -83,6 +83,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     options = serializers.SerializerMethodField()
     separate_options = serializers.SerializerMethodField()
+    free_shipping = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    rating_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -230,6 +233,22 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         # 각각의 옵션 카테고리별로 집합을 리스트 형태로 변환
         return [{key: value} for key, value in separate_options_dict.items()]
 
+    def rating(product):
+        count = product.reviews.count()
+        if count == 0:
+            return 0
+        else:
+            total_rating = 0
+            for review in product.reviews.all().values("rating"):
+                total_rating += review["rating"]
+            return round(total_rating / count, 2)
+
+    def rating_count(product):
+        return product.reviews.count()
+
+    def free_shipping(product):
+        return product.shipping_price == "0"
+
 
 class ProductListSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
@@ -238,7 +257,11 @@ class ProductListSerializer(serializers.ModelSerializer):
     shop_name = serializers.SerializerMethodField()
     discount_rate = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
+    is_discount = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
+    free_shipping = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    rating_count = serializers.SerializerMethodField()
 
     # colors = ColorSerializer(many=True, read_only=True)
 
@@ -304,6 +327,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_is_star_seller(self, product):
         return product.shop.is_star_seller
 
+    def is_discount(product):
+        return product.original_price > product.price
+
 
 class TinyProductSerializer(serializers.ModelSerializer):
     discount_rate = serializers.SerializerMethodField()
@@ -323,6 +349,23 @@ class TinyProductSerializer(serializers.ModelSerializer):
             return int((1 - product.price / product.original_price) * 100)
         else:
             return 0
+
+    def rating(product):
+        count = product.reviews.count()
+        if count == 0:
+            return 0
+        else:
+            total_rating = 0
+            for review in product.reviews.all().values("rating"):
+                total_rating += review["rating"]
+            return round(total_rating / count, 2)
+
+    def rating_count(product):
+        return product.reviews.count()
+
+    def free_shipping(product):
+        return product.shipping_price == "0"
+
 
 # 유효성 검사 더 구체적으로 가능하게 하기 TODO: validate method 추가
 class ProductCreateSerializer(serializers.ModelSerializer):
@@ -381,7 +424,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     def get_tags(self, obj):
         return [tag.tag for tag in obj.tags.all()]
-    
+
     def get_section(self, obj):
         return obj.section.title if obj.section else None
 
@@ -391,10 +434,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         images = obj.images.order_by("order").values_list("image", flat=True)
         return list(images)
-    
+
     def get_video(self, obj):
         return obj.video.video if hasattr(obj, "video") and obj.video else None
-    
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
@@ -446,16 +488,15 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-
         # `tags` 필드는 validated_data에 포함되지 않으므로, 별도로 처리
-        tags_list = self.context.get('request').data.get('tags')
+        tags_list = self.context.get("request").data.get("tags")
         if tags_list is not None:
             instance.tags.clear()
             for tag_name in tags_list:
                 tag, created = ProductTag.objects.get_or_create(tag=tag_name)
                 instance.tags.add(tag)
 
-        materials_list = self.context.get('request').data.get('materials')
+        materials_list = self.context.get("request").data.get("materials")
         if materials_list is not None:
             instance.materials.clear()
             for material_name in materials_list:
@@ -463,19 +504,19 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
                 instance.materials.add(material)
 
         # 이미지 처리
-        images_data = self.context.get('request').data.get('images')
+        images_data = self.context.get("request").data.get("images")
         if images_data is not None:
             self.update_images(images_data, instance)
 
         # 비디오 처리
-        video_url = self.context.get('request').data.get('video')
+        video_url = self.context.get("request").data.get("video")
         if video_url is not None:
-            if video_url == "" and hasattr(instance, 'video'):
+            if video_url == "" and hasattr(instance, "video"):
                 # 비디오 URL이 빈 문자열이고 상품에 비디오가 있는 경우, 비디오 삭제
                 instance.video.delete()
             elif video_url:
                 # 비디오 URL이 존재하면 기존 비디오 업데이트 또는 새 비디오 생성
-                if hasattr(instance, 'video'):
+                if hasattr(instance, "video"):
                     instance.video.video = video_url
                     instance.video.save()
                 else:
@@ -483,7 +524,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
 
         # ----- validated_data 사용 ------
         # category_name 처리
-        category_name = validated_data.pop('category_name', None)
+        category_name = validated_data.pop("category_name", None)
         if category_name:
             category = get_object_or_404(Category, name=category_name)
             instance.category.clear()
@@ -491,27 +532,31 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             # 상위 카테고리 추가 (필요한 경우)
             if category.parent:
                 instance.category.add(category.parent)
-        
+
         # primary_color 처리
-        primary_color_name = validated_data.pop('primary_color', None)
+        primary_color_name = validated_data.pop("primary_color", None)
         if primary_color_name is not None:
             primary_color = Color.objects.filter(name=primary_color_name).first()
             if primary_color:
                 instance.primary_color = primary_color
             else:
-                raise serializers.ValidationError({"primary_color": "Invalid color name"})
+                raise serializers.ValidationError(
+                    {"primary_color": "Invalid color name"}
+                )
 
         # secondary_color 처리
-        secondary_color_name = validated_data.pop('secondary_color', None)
+        secondary_color_name = validated_data.pop("secondary_color", None)
         if secondary_color_name is not None:
             secondary_color = Color.objects.filter(name=secondary_color_name).first()
             if secondary_color:
                 instance.secondary_color = secondary_color
             else:
-                raise serializers.ValidationError({"secondary_color": "Invalid color name"})
-        
+                raise serializers.ValidationError(
+                    {"secondary_color": "Invalid color name"}
+                )
+
         # section 처리
-        section_name = validated_data.pop('section', None)
+        section_name = validated_data.pop("section", None)
         if section_name is not None:
             if section_name.strip():  # 빈 문자열이 아닌 경우
                 # 상점에 해당하는 섹션을 찾거나 생성
@@ -519,7 +564,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
                     title=section_name, shop=instance.shop
                 )
                 if created:  # 새로운 섹션이 생성된 경우
-                # 현재 상점의 섹션 개수를 기준으로 order 값을 설정
+                    # 현재 상점의 섹션 개수를 기준으로 order 값을 설정
                     last_order = Section.objects.filter(shop=instance.shop).count()
                     section_instance.order = last_order
                     section_instance.save()
@@ -528,8 +573,6 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             else:
                 # 섹션 연결 제거 (빈 문자열인 경우)
                 instance.section = None
-
-    
 
         # 나머지 필드 업데이트
         for attr, value in validated_data.items():
@@ -543,10 +586,10 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
 
     def get_subCategory(self, product):
         return product.category.get(level=3).name
-    
+
     def get_tags(self, obj):
         return [tag.tag for tag in obj.tags.all()]
-    
+
     def get_section(self, obj):
         return obj.section.title if obj.section else None
 
@@ -556,17 +599,17 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
     def get_images(self, shop):
         images = shop.images.order_by("order")
         return [
-            {   
+            {
                 "id": image.pk,
                 "image": image.image,
-                "order" : image.order,
-      
+                "order": image.order,
             }
             for image in images
         ]
+
     def get_video(self, obj):
         return obj.video.video if hasattr(obj, "video") and obj.video else None
-    
+
     def update_images(self, images_data, product):
         existing_images = set(product.images.all())
         updated_images = set()

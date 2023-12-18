@@ -74,8 +74,8 @@ class ShopDetailSerializer(ModelSerializer):
             "short_description",
             "description_title",
             "description",
-            "expiration",
-            "cancellation",
+            "subscription_expiration_date",
+            "auto_renewal_enabled",
             "shop_policy_updated_at",
             "is_liked",
             "is_star_seller",
@@ -104,7 +104,9 @@ class ShopDetailSerializer(ModelSerializer):
         common_sections = [{"title": "모든 작품", "product_count": shop.products.count()}]
         # "할인 중" 섹션을 추가 TODO: is_discount를 필드로 만들어서 추후에 최적화 하기
         discount_products_count = sum(
-            1 for product in shop.products.all() if product.is_discount()
+            1
+            for product in shop.products.all()
+            if (product.original_price > product.price)
         )
         common_sections.append(
             {"title": "할인 중", "product_count": discount_products_count}

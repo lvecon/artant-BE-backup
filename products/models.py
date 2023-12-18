@@ -13,6 +13,7 @@ from . import (
 from product_attributes.models import Color
 
 
+# TODO: 리뷰 수, 별점 관리 방법. 필드? 함수? / 할인가 관리방법 미정
 class Product(CommonModel):
     shop = models.ForeignKey(
         "shops.Shop",
@@ -21,8 +22,8 @@ class Product(CommonModel):
     )
     name = models.CharField(max_length=140)
     description = models.TextField()
-    original_price = models.PositiveIntegerField(null=True, blank=True)
     price = models.PositiveIntegerField()
+    original_price = models.PositiveIntegerField(null=True, blank=True)
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
     sku = models.CharField(max_length=140, null=True, blank=True)
     category = models.ManyToManyField(
@@ -113,35 +114,11 @@ class Product(CommonModel):
     def __iter__(self):
         return iter(self.tag)
 
-    def rating(product):
-        count = product.reviews.count()
-        if count == 0:
-            return 0
-        else:
-            total_rating = 0
-            for review in product.reviews.all().values("rating"):
-                total_rating += review["rating"]
-            return round(total_rating / count, 2)
 
-    def rating_count(product):
-        return product.reviews.count()
-
-    def free_shipping(product):
-        return product.shipping_price == "0"
-
-    def is_discount(product):
-        return product.original_price > product.price
-
-    def get_category(product):
-        return product.category.get(level=2).name
-
-    def get_shop_name(product):
-        return product.shop.shop_name
-
-
+# TODO: 할인 적용 방식 기획 나오면 수정
 @receiver(pre_save, sender=Product)
 def set_original_price(sender, instance, **kwargs):
-    if instance.original_price is None:
+    if instance.original_price is None or instance.price > instance.original_price:
         instance.original_price = instance.price
 
 
