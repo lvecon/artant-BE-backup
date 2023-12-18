@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from django.db.models import Count
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
 from .models import Cart, CartLine
 from products.models import (
     Product,
@@ -11,13 +11,12 @@ from product_variants.models import ProductVariant
 from .serializers import CartSerializer, CartLineSerializer
 
 
-# Create your views here.
 class CartView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
         user = request.user
-        cart = Cart.objects.get(user=user)
+        cart, _ = Cart.objects.get_or_create(user=user)
 
         serializer = CartSerializer(
             cart,

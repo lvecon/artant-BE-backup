@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import User
+from shops.models import Shop
 
 
 class TinyUserSerializer(ModelSerializer):
@@ -14,48 +15,37 @@ class TinyUserSerializer(ModelSerializer):
         )
 
 
+# PrivateUserSerializer에 사용
+class MyShopSerializer(ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = (
+            "pk",
+            "shop_name",
+            "avatar",
+            "is_activated",
+            "register_step",
+        )
+
+
 class PrivateUserSerializer(ModelSerializer):
-    shop_pk = serializers.SerializerMethodField()
-    shop_name = serializers.SerializerMethodField()
-    shop_avatar = serializers.SerializerMethodField()
-    shop_is_activated = serializers.SerializerMethodField()
-    shop_register_step = serializers.SerializerMethodField()
+    shop = MyShopSerializer(read_only=True)
 
     class Meta:
         model = User
         fields = (
             "pk",
-            "shop_pk",
-            "shop_name",
-            "shop_avatar",
-            "shop_is_activated",
-            "shop_register_step",
-            "username",
-            "avatar",
-            "email",
             "name",
+            "username",
+            "email",
+            "avatar",
             "gender",
             "birthday",
             "description",
-            "birthday",
+            "shop",
             "default_shipping_address",
             "default_payment_info",
         )
-
-    def get_shop_pk(self, user):
-        return user.shop.pk if hasattr(user, "shop") and user.shop else None
-
-    def get_shop_name(self, user):
-        return user.shop.shop_name if hasattr(user, "shop") and user.shop else None
-
-    def get_shop_avatar(self, user):
-        return user.shop.avatar if hasattr(user, "shop") and user.shop else None
-
-    def get_shop_is_activated(self, user):
-        return user.shop.is_activated if hasattr(user, "shop") and user.shop else None
-
-    def get_shop_register_step(self, user):
-        return user.shop.register_step if hasattr(user, "shop") and user.shop else None
 
 
 class UserSerializer(serializers.ModelSerializer):

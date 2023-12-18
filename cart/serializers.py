@@ -2,13 +2,9 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import Cart, CartLine
 from products.serializers import (
-    ProductListSerializer,
-    ProductDetailSerializer,
-    ProductVariantSerializer,
     TinyProductVariantSerializer,
     ProductSnapshotSerializer,
 )
-from users.serializers import TinyUserSerializer
 
 
 class CartLineSerializer(ModelSerializer):
@@ -33,6 +29,7 @@ class CartLineSerializer(ModelSerializer):
         else:
             return CartLine.objects.filter(product=obj.product).count()
 
+
 class CartSerializer(ModelSerializer):
     shop_cartlines = serializers.SerializerMethodField()
 
@@ -48,15 +45,15 @@ class CartSerializer(ModelSerializer):
             # 각 상점의 ID를 키로 사용하여 상점 정보를 딕셔너리에 저장합니다.
             if shop.id not in shop_to_cartlines:
                 shop_to_cartlines[shop.id] = {
-                    'shop_id': shop.id,
-                    'shop_name': shop.shop_name,  
-                    'shop_avatar': shop.avatar, 
-                    'cart_lines': []
+                    "shop_id": shop.id,
+                    "shop_name": shop.shop_name,
+                    "shop_avatar": shop.avatar,
+                    "cart_lines": [],
                 }
-            
+
             # CartLineSerializer를 사용하여 카트 라인 정보를 직렬화합니다.
             shop_cartline_data = CartLineSerializer(cartline).data
             # 해당 상점의 카트 라인 리스트에 추가합니다.
-            shop_to_cartlines[shop.id]['cart_lines'].append(shop_cartline_data)
+            shop_to_cartlines[shop.id]["cart_lines"].append(shop_cartline_data)
 
         return list(shop_to_cartlines.values())
