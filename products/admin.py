@@ -14,7 +14,6 @@ class ProductAdmin(admin.ModelAdmin):
         "__str__",
         "price",
         "shop",
-        "free_shipping",
     )
 
 

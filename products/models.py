@@ -14,17 +14,15 @@ from product_attributes.models import Color
 
 
 class Product(CommonModel):
-    """Model Definition for Products"""
-
-    name = models.CharField(max_length=140)
-    description = models.TextField()
-    original_price = models.PositiveIntegerField(null=True, blank=True)
-    price = models.PositiveIntegerField()
     shop = models.ForeignKey(
         "shops.Shop",
         on_delete=models.CASCADE,
         related_name="products",
     )
+    name = models.CharField(max_length=140)
+    description = models.TextField()
+    original_price = models.PositiveIntegerField(null=True, blank=True)
+    price = models.PositiveIntegerField()
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
     sku = models.CharField(max_length=140, null=True, blank=True)
     category = models.ManyToManyField(
