@@ -19,7 +19,7 @@ urlpatterns = [
     ),
     path(
         "<int:shop_pk>/products/<int:product_pk>",
-        views.ProductUpdate.as_view(),
+        views.ShopProductUpdate.as_view(),
         name="product_update",
     ),
     path("<int:shop_pk>/sections", views.Sections.as_view(), name="shop_sections"),

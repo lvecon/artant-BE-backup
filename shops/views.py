@@ -8,11 +8,8 @@ from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.shortcuts import get_object_or_404
-from django.db.models import Max
 from shops.models import Shop, Section
-from products.models import Product, Color, ProductImage, ProductVideo
-from product_attributes.models import Category, Material, ProductTag
-from product_variants.models import ProductVariant, Variation, VariationOption
+from products.models import Product
 from . import serializers
 from reviews.serializers import ReviewSerializer
 from products.serializers import (
@@ -66,7 +63,7 @@ class RecommendedShops(APIView):
         return Response(serializer.data)
 
 
-# 상점 등록 절차. 처음 생성 시, 상점 이름만 입력
+# 상점 등록 절차. 상점 등록 페이지에서 처음 생성 시, 상점 이름만 입력
 class Shops(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -78,7 +75,7 @@ class Shops(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 상점 생성 시리얼라이저 사용. user와 register_step은 시리얼라이저에서 자동 처리
+        # user와 register_step은 시리얼라이저에서 자동 처리
         serializer = serializers.ShopCreateSerializer(
             data=request.data, context={"request": request}
         )
@@ -252,7 +249,7 @@ class ShopProducts(APIView):
 
 
 # 상점의 상품 정보 업데이트
-class ProductUpdate(APIView):
+class ShopProductUpdate(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_product(self, pk):
