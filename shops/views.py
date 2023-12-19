@@ -17,16 +17,15 @@ from product_attributes.models import Category, Material, ProductTag
 from product_variants.models import ProductVariant, Variation, VariationOption
 from reviews.models import Review
 from . import serializers
-from reviews.serializers import ReviewSerializer, ReviewDetailSerializer
+from reviews.serializers import ReviewSerializer
 from products.serializers import (
     ProductListSerializer,
     ProductCreateSerializer,
     ProductUpdateSerializer,
 )
-from favorites.serializers import FavoriteShopSerializer
 
 
-# Index page의 상점 banner 정보
+# Index page 상단. 상점 banner 정보
 class ShopBanners(APIView):
     def get(self, request):
         # star seller, 최신순 정렬. 8개. TODO: 정렬 기준 논의. 현재 배경사진 있는 것만 필터링
@@ -52,8 +51,10 @@ class FeaturedShops(APIView):
         return Response(serializer.data)
 
 
-# Profile page. 당신이 좋아할 것 같은 상점. TODO: 추천 로직 추가. permission class 설정.
+# Profile page. 당신이 좋아할 것 같은 상점. TODO: 추천 로직 추가.
 class RecommendedShops(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         page_size = settings.RECOMMENDED_SHOP_PAGE_SIZE
         sorted_shops = (
@@ -64,10 +65,11 @@ class RecommendedShops(APIView):
             .order_by("-is_star_seller", "-created_at")[:page_size]
         )
 
-        serializer = FavoriteShopSerializer(sorted_shops, many=True)
+        serializer = serializers.RecommendedShopSerializer(sorted_shops, many=True)
         return Response(serializer.data)
 
 
+# 상점 등록 절차. 처음 생성 시, 상점 이름만 입력
 class Shops(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -79,10 +81,10 @@ class Shops(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        data = request.data
-        data["user"] = request.user.id  # 현재 사용자를 상점 소유자로 설정
-        data["register_step"] = data.get("register_step", 1)
-        serializer = serializers.ShopCreateSerializer(data=data)
+        # 상점 생성 시리얼라이저 사용. user와 register_step은 시리얼라이저에서 자동 처리
+        serializer = serializers.ShopCreateSerializer(
+            data=request.data, context={"request": request}
+        )
 
         if serializer.is_valid():
             serializer.save()
@@ -102,7 +104,6 @@ class ShopDetail(APIView):
 
     def get(self, request, pk):
         shop = self.get_object(pk)
-
         serializer = serializers.ShopDetailSerializer(
             shop,
             context={"reqeust": request},

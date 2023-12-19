@@ -27,6 +27,25 @@ class FeaturedShopSerializer(ModelSerializer):
         )
 
 
+# 당신이 좋아할 것 같은 상점
+class RecommendedShopSerializer(ModelSerializer):
+    thumbnails = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Shop
+        fields = (
+            "pk",
+            "shop_name",
+            "avatar",
+            "thumbnails",
+        )
+
+    # 상점의 상품 썸네일 4개
+    def get_thumbnails(self, shop):
+        thumbnails = shop.products.all()[:4].values_list("thumbnail", flat=True)
+        return list(thumbnails)
+
+
 class ShopSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
 
@@ -102,11 +121,10 @@ class ShopDetailSerializer(ModelSerializer):
 
     def get_common_sections(self, shop):
         common_sections = [{"title": "모든 작품", "product_count": shop.products.count()}]
-        # "할인 중" 섹션을 추가 TODO: is_discount를 필드로 만들어서 추후에 최적화 하기
+
+        # "할인 중" 섹션 추가
         discount_products_count = sum(
-            1
-            for product in shop.products.all()
-            if (product.original_price > product.price)
+            1 for product in shop.products.all() if (product.is_discount)
         )
         common_sections.append(
             {"title": "할인 중", "product_count": discount_products_count}
@@ -131,10 +149,22 @@ class ShopDetailSerializer(ModelSerializer):
         return featured_sections
 
 
+# 상점 등록. 처음 생성 시, 상점 이름만 입력
 class ShopCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
-        fields = "__all__"
+        fields = ["shop_name", "user", "register_step"]
+        extra_kwargs = {
+            "user": {"read_only": True},
+            "register_step": {"read_only": True},
+            "shop_name": {"required": True},
+        }
+
+    def create(self, validated_data):
+        # user와 register_step은 여기에서 추가로 설정
+        validated_data["user"] = self.context["request"].user
+        validated_data["register_step"] = 1
+        return super().create(validated_data)
 
 
 class ShopUpdateSerializer(serializers.ModelSerializer):
