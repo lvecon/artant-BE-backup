@@ -1,5 +1,4 @@
 from django.urls import path
-from rest_framework.authtoken.views import obtain_auth_token
 from . import views
 
 urlpatterns = [
@@ -12,12 +11,6 @@ urlpatterns = [
     ),
     # 특정 상점에 대한 상세 정보 및 관리
     path("<int:pk>", views.ShopDetail.as_view(), name="shop_detail"),
-    path("<int:pk>/reviews", views.ShopReviews.as_view(), name="shop_reviews"),
-    path(
-        "<int:pk>/reviews/images/<int:product_pk>",
-        views.ReviewPhotos.as_view(),
-        name="review_photos",
-    ),
     # 특정 상점의 제품 및 섹션 관리
     path(
         "<int:shop_pk>/products",
@@ -30,4 +23,11 @@ urlpatterns = [
         name="product_update",
     ),
     path("<int:shop_pk>/sections", views.Sections.as_view(), name="shop_sections"),
+    # TODO: Reviews app으로 이동
+    path("<int:pk>/reviews", views.ShopReviews.as_view(), name="shop_reviews"),
+    path(
+        "<int:pk>/reviews/images/<int:product_pk>",
+        views.ReviewPhotos.as_view(),
+        name="review_photos",
+    ),
 ]

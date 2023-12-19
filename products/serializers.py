@@ -393,6 +393,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "personalization_guide",
             "variations",
             "variants",
+            # 쓰기 전용 필드
             "category_name_input",
             "primary_color_input",
             "secondary_color_input",
@@ -561,21 +562,37 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     #         ).first()
 
 
+# 상품 정보 수정
 class ProductUpdateSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(write_only=True, required=False)
-    primary_color = serializers.CharField(required=False, allow_null=True)
-    secondary_color = serializers.CharField(required=False, allow_null=True)
-    section = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
     # SerializerMethodField를 사용하여 읽기 전용 필드를 정의
     # variations = serializers.SerializerMethodField()
     # variants = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
     subCategory = serializers.SerializerMethodField()
+    primary_color = serializers.SerializerMethodField()
+    secondary_color = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     materials = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     video = serializers.SerializerMethodField()
+
+    # 쓰기 전용 필드
+    category_name_input = serializers.CharField(write_only=True, required=False)
+    primary_color_input = serializers.CharField(write_only=True, required=False)
+    secondary_color_input = serializers.CharField(write_only=True, required=False)
+    tags_input = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False
+    )
+    section_input = serializers.CharField(write_only=True, required=False)
+    materials_input = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False
+    )
+    images_input = serializers.ListField(
+        child=serializers.JSONField(), write_only=True, required=False
+    )
+    video_input = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
 
     class Meta:
         model = Product
@@ -585,7 +602,6 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             "made_by",
             "product_type",
             "product_creation_date",
-            "category_name",
             "category",
             "subCategory",
             "primary_color",
@@ -607,107 +623,135 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             "personalization_guide",
             "variations",
             "variants",
+            # 쓰기 전용 필드
+            "category_name_input",
+            "primary_color_input",
+            "secondary_color_input",
+            "section_input",
+            "tags_input",
+            "materials_input",
+            "images_input",
+            "video_input",
         )
 
     def update(self, instance, validated_data):
-        # `tags` 필드는 validated_data에 포함되지 않으므로, 별도로 처리
-        tags_list = self.context.get("request").data.get("tags")
-        if tags_list is not None:
-            instance.tags.clear()
-            for tag_name in tags_list:
-                tag, created = ProductTag.objects.get_or_create(name=tag_name)
-                instance.tags.add(tag)
+        # 사용자 정의 필드 처리
+        with transaction.atomic():
+            # 카테고리, 색상, 섹션, 태그, 소재, 이미지, 비디오 처리
+            self.handle_custom_fields(instance, validated_data)
 
-        materials_list = self.context.get("request").data.get("materials")
-        if materials_list is not None:
-            instance.materials.clear()
-            for material_name in materials_list:
-                material, created = Material.objects.get_or_create(name=material_name)
-                instance.materials.add(material)
+            # 나머지 필드 업데이트
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
 
-        # 이미지 처리
-        images_data = self.context.get("request").data.get("images")
-        if images_data is not None:
-            self.update_images(images_data, instance)
+            return instance
 
-        # 비디오 처리
-        video_url = self.context.get("request").data.get("video")
-        if video_url is not None:
-            if video_url == "" and hasattr(instance, "video"):
-                # 비디오 URL이 빈 문자열이고 상품에 비디오가 있는 경우, 비디오 삭제
-                instance.video.delete()
-            elif video_url:
-                # 비디오 URL이 존재하면 기존 비디오 업데이트 또는 새 비디오 생성
-                if hasattr(instance, "video"):
-                    instance.video.video = video_url
-                    instance.video.save()
-                else:
-                    ProductVideo.objects.create(video=video_url, product=instance)
+    def handle_custom_fields(self, instance, validated_data):
+        # 각 필드 처리 메소드 호출
+        self.handle_category(instance, validated_data.pop("category_name_input", None))
+        self.handle_colors(
+            instance,
+            validated_data.pop("primary_color_input", None),
+            validated_data.pop("secondary_color_input", None),
+        )
+        self.handle_section(instance, validated_data.pop("section_input", None))
+        self.handle_tags(instance, validated_data.pop("tags_input", []))
+        self.handle_materials(instance, validated_data.pop("materials_input", []))
+        self.handle_images(instance, validated_data.pop("images_input", []))
+        self.handle_video(instance, validated_data.pop("video_input", None))
 
-        # ----- validated_data 사용 ------
-        # category_name 처리
-        category_name = validated_data.pop("category_name", None)
+    def handle_category(self, instance, category_name):
         if category_name:
-            category = get_object_or_404(Category, name=category_name)
+            category = Category.objects.get(name=category_name)
             instance.category.clear()
             instance.category.add(category)
-            # 상위 카테고리 추가 (필요한 경우)
             if category.parent:
                 instance.category.add(category.parent)
 
-        # primary_color 처리
-        primary_color_name = validated_data.pop("primary_color", None)
-        if primary_color_name is not None:
-            primary_color = Color.objects.filter(name=primary_color_name).first()
-            if primary_color:
-                instance.primary_color = primary_color
-            else:
-                raise serializers.ValidationError(
-                    {"primary_color": "Invalid color name"}
-                )
-
-        # secondary_color 처리
-        secondary_color_name = validated_data.pop("secondary_color", None)
-        if secondary_color_name is not None:
-            secondary_color = Color.objects.filter(name=secondary_color_name).first()
-            if secondary_color:
-                instance.secondary_color = secondary_color
-            else:
-                raise serializers.ValidationError(
-                    {"secondary_color": "Invalid color name"}
-                )
-
-        # section 처리
-        section_name = validated_data.pop("section", None)
-        if section_name is not None:
-            if section_name.strip():  # 빈 문자열이 아닌 경우
-                # 상점에 해당하는 섹션을 찾거나 생성
-                section_instance, created = Section.objects.get_or_create(
-                    title=section_name, shop=instance.shop
-                )
-                if created:  # 새로운 섹션이 생성된 경우
-                    # 현재 상점의 섹션 개수를 기준으로 order 값을 설정
-                    last_order = Section.objects.filter(shop=instance.shop).count()
-                    section_instance.order = last_order
-                    section_instance.save()
-                # 섹션을 상품과 연결
-                instance.section = section_instance
-            else:
-                # 섹션 연결 제거 (빈 문자열인 경우)
-                instance.section = None
-
-        # 나머지 필드 업데이트
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+    def handle_colors(self, instance, primary_color_name, secondary_color_name):
+        if primary_color_name:
+            primary_color = Color.objects.get(name=primary_color_name)
+            instance.primary_color = primary_color
+        if secondary_color_name:
+            secondary_color = Color.objects.get(name=secondary_color_name)
+            instance.secondary_color = secondary_color
         instance.save()
 
-        return instance
+    def handle_section(self, instance, section_title):
+        if section_title:
+            section, created = Section.objects.get_or_create(
+                title=section_title, shop=instance.shop
+            )
+            if created:  # 새로운 섹션이 생성된 경우
+                # 현재 상점의 섹션 개수를 기준으로 order 값을 설정
+                last_order = Section.objects.filter(shop=instance.shop).count()
+                section.order = last_order
+                section.save()
+            instance.section = section
+            instance.save()
+
+    def handle_tags(self, instance, tags_list):
+        instance.tags.clear()
+        for tag_name in tags_list:
+            tag, created = ProductTag.objects.get_or_create(name=tag_name)
+            instance.tags.add(tag)
+
+    def handle_materials(self, instance, materials_list):
+        instance.materials.clear()
+        for material_name in materials_list:
+            material, created = Material.objects.get_or_create(name=material_name)
+            instance.materials.add(material)
+
+    def handle_images(self, instance, images_list):
+        existing_images = set(instance.images.all())
+        updated_images = set()
+
+        for index, image_data in enumerate(images_list, start=1):
+            image_id = image_data.get("id")
+            image_order = index
+            if image_id:
+                # 기존 이미지 업데이트
+                image = instance.images.get(id=image_id)
+                for key, value in image_data.items():
+                    if key != "order":
+                        setattr(image, key, value)
+                image.order = image_order
+                image.save()
+                updated_images.add(image)
+            else:
+                # 새 이미지 추가
+                image_data["order"] = image_order
+                new_image = ProductImage.objects.create(
+                    image=image_data.get("image"), product=instance, order=image_order
+                )
+                updated_images.add(new_image)
+
+        # 삭제되어야 하는 이미지 찾기 및 삭제
+        for image in existing_images - updated_images:
+            image.delete()
+
+    def handle_video(self, instance, video_url):
+        if video_url:
+            if hasattr(instance, "video"):
+                instance.video.video = video_url
+                instance.video.save()
+            else:
+                ProductVideo.objects.create(product=instance, video=video_url)
+        elif hasattr(instance, "video"):
+            instance.video.delete()
 
     def get_category(self, product):
         return product.category.get(level=2).name
 
     def get_subCategory(self, product):
         return product.category.get(level=3).name
+
+    def get_primary_color(self, obj):
+        return obj.primary_color.name if obj.primary_color else None
+
+    def get_secondary_color(self, obj):
+        return obj.secondary_color.name if obj.secondary_color else None
 
     def get_tags(self, obj):
         return [tag.name for tag in obj.tags.all()]
@@ -731,32 +775,6 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
 
     def get_video(self, obj):
         return obj.video.video if hasattr(obj, "video") and obj.video else None
-
-    def update_images(self, images_data, product):
-        existing_images = set(product.images.all())
-        updated_images = set()
-
-        for index, image_data in enumerate(images_data, start=1):
-            image_id = image_data.get("id")
-            image_order = index
-            if image_id:
-                # 기존 이미지 업데이트
-                image = product.images.get(id=image_id)
-                for key, value in image_data.items():
-                    if key != "order":
-                        setattr(image, key, value)
-                image.order = image_order
-                image.save()
-                updated_images.add(image)
-            else:
-                # 새 이미지 추가
-                image_data["order"] = image_order
-                new_image = ProductImage.objects.create(**image_data, product=product)
-                updated_images.add(new_image)
-
-        # 삭제되어야 하는 이미지 찾기 및 삭제
-        for image in existing_images - updated_images:
-            image.delete()
 
 
 class ProductImageSerializer(serializers.ModelSerializer):

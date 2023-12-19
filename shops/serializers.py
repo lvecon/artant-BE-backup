@@ -46,31 +46,6 @@ class RecommendedShopSerializer(ModelSerializer):
         return list(thumbnails)
 
 
-class ShopSerializer(ModelSerializer):
-    is_liked = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Shop
-        fields = (
-            "pk",
-            "shop_name",
-            "avatar",
-            "background_pic",
-            "is_liked",
-            "is_star_seller",
-        )
-
-    def get_is_liked(self, shop):
-        request = self.context.get("request")
-        if request:
-            if request.user.is_authenticated:
-                return FavoriteShop.objects.filter(
-                    user=request.user,
-                    shops__pk=shop.pk,
-                ).exists()
-        return False
-
-
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
