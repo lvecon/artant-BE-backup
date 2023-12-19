@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import User
+from shops.models import Shop
 
 
 class TinyUserSerializer(ModelSerializer):
@@ -14,49 +15,52 @@ class TinyUserSerializer(ModelSerializer):
         )
 
 
+# PrivateUserSerializer에 사용
+class MyShopSerializer(ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = (
+            "pk",
+            "shop_name",
+            "avatar",
+            "is_activated",
+            "register_step",
+        )
+
+
 class PrivateUserSerializer(ModelSerializer):
-    shop_pk = serializers.SerializerMethodField()
-    shop_name = serializers.SerializerMethodField()
-    shop_avatar = serializers.SerializerMethodField()
-    shop_is_activated = serializers.SerializerMethodField()
-    shop_register_step = serializers.SerializerMethodField()
+    shop = MyShopSerializer(read_only=True)
 
     class Meta:
         model = User
         fields = (
             "pk",
-            "shop_pk",
-            "shop_name",
-            "shop_avatar",
-            "shop_is_activated",
-            "shop_register_step",
-            "username",
-            "avatar",
-            "email",
             "name",
+            "username",
+            "email",
+            "avatar",
             "gender",
             "birthday",
             "description",
-            "birthday",
+            "shop",
             "default_shipping_address",
-            "default_billing_address",
-            "address",
+            "default_payment_info",
         )
 
-    def get_shop_pk(self, user):
-        return user.shop.pk if hasattr(user, "shop") and user.shop else None
 
-    def get_shop_name(self, user):
-        return user.shop.shop_name if hasattr(user, "shop") and user.shop else None
+class PublicUserSerializer(ModelSerializer):
+    shop = MyShopSerializer(read_only=True)
 
-    def get_shop_avatar(self, user):
-        return user.shop.avatar if hasattr(user, "shop") and user.shop else None
-
-    def get_shop_is_activated(self, user):
-        return user.shop.is_activated if hasattr(user, "shop") and user.shop else None
-
-    def get_shop_register_step(self, user):
-        return user.shop.register_step if hasattr(user, "shop") and user.shop else None
+    class Meta:
+        model = User
+        fields = (
+            "pk",
+            "username",
+            "email",
+            "avatar",
+            "description",
+            "shop",
+        )
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -72,27 +76,8 @@ class UserSerializer(serializers.ModelSerializer):
             "description",
             "username",
             "avatar",
-        ]  # Include other relevant fields
+        ]  # Include other relevant fieldsㅌㅈ
         extra_kwargs = {"password": {"write_only": True}}
-
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with that email already exists.")
-        return value
-
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError(
-                "A user with that username already exists."
-            )
-        return value
-
-    def validate_name(self, value):
-        if User.objects.filter(name=value).exists():
-            raise serializers.ValidationError(
-                "A user with that nickname already exists."
-            )
-        return value
 
     def create(self, validated_data):
         user = User.objects.create(

@@ -9,8 +9,6 @@ class ShopAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "shop_name",
-        "description",
-        "website_url",
     )
 
 
@@ -25,9 +23,15 @@ class SectionAdmin(admin.ModelAdmin):
 
 @admin.register(ShopImage)
 class ShopImageAdmin(admin.ModelAdmin):
-    list_display = ("id", "__str__",)
+    list_display = (
+        "id",
+        "__str__",
+    )
 
 
 @admin.register(ShopVideo)
 class ShopVideoAdmin(admin.ModelAdmin):
-    list_display = ("id", "__str__",)
+    list_display = (
+        "id",
+        "__str__",
+    )

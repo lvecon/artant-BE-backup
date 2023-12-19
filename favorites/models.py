@@ -3,14 +3,14 @@ from django.db import models
 
 # Create your models here.
 class FavoriteProduct(models.Model):
-    products = models.ManyToManyField(
-        "products.Product",
-        related_name="favorites_product",
-    )
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
         related_name="favorites_products",
+    )
+    products = models.ManyToManyField(
+        "products.Product",
+        related_name="favorites_product",
     )
 
     def __str__(self):
@@ -18,14 +18,14 @@ class FavoriteProduct(models.Model):
 
 
 class FavoriteShop(models.Model):
-    shops = models.ManyToManyField(
-        "shops.Shop",
-        related_name="favorites_shop",
-    )
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
         related_name="favorites_shops",
+    )
+    shops = models.ManyToManyField(
+        "shops.Shop",
+        related_name="favorites_shop",
     )
 
     def __str__(self):

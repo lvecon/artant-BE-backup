@@ -36,3 +36,13 @@ class ProductTypeChoices(models.TextChoices):
 class ProductItemTypeChoices(models.TextChoices):
     Handmade = ("Handmade", "Handmade")
     Vintage = ("Vintage", "Vintage")
+
+
+class ProductWeightUnitChoices(models.TextChoices):
+    KG = ("kg", "Kilogram")
+    G = ("g", "Gram")
+
+
+class ProductLengthUnitChoices(models.TextChoices):
+    M = ("m", "Meter")
+    CM = ("cm", "Centimeter")

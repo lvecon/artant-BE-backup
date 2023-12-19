@@ -1,167 +1,119 @@
-from django.conf import settings
-from django.shortcuts import render
-import requests
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.views import APIView
-from products import serializers
-from products.models import Product
-from user_activities.models import UserProductTimestamp
-from reviews.models import Review, ReviewReply
-from products.models import (
-    Product,
-    Color,
-)
-from product_attributes.models import Category, Material, ProductTag
-from product_variants.models import ProductVariant, Variation, VariationOption
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework import status
+# 표준 라이브러리
 from django.utils.timezone import now
-from rest_framework.response import Response
+from django.db.models import F, Count, Q
+from django.db.models.functions import Length
+
+# Django 관련 라이브러리
+from django.conf import settings
 from django.db.models import Q
-from rest_framework.exceptions import (
-    NotFound,
-    ParseError,
-    PermissionDenied,
-)
-from django.db.models import F, Count
+
+# 서드파티 라이브러리
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework import status
+from rest_framework.status import HTTP_200_OK
+
+# 로컬 애플리케이션 모듈
+from products.models import Product, ProductImage
+from . import serializers
 from reviews.serializers import (
     ReviewSerializer,
     ReviewPhotoSerializer,
-    ReviewDetailSerializer,
     ReviewReplySerializer,
 )
-from django.db.models.functions import Length
-from rest_framework.exceptions import NotFound, PermissionDenied
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from .models import ProductImage, ProductVideo
-from rest_framework.status import HTTP_200_OK
-from reviews.models import ReviewPhoto
+from reviews.models import Review, ReviewReply, ReviewPhoto
+from user_activities.models import UserProductTimestamp
 
 
-# Create your views here.
 class Products(APIView):
-    def get(self, request):
-        color_param = self.request.GET.get("color", None)
-        colors = color_param.split(",") if color_param else []
-        limit = int(self.request.GET.get("limit", 40))
-        offset = int(self.request.GET.get("offset", 0))
-        category_type = self.request.GET.get("category", None)
-        tag = self.request.GET.get("tag", None)
+    def get_query_params(self):
+        return {
+            "color_param": self.request.GET.get("color", None),
+            "limit": int(self.request.GET.get("limit", 40)),
+            "offset": int(self.request.GET.get("offset", 0)),
+            "category_type": self.request.GET.get("category", None),
+            "tag": self.request.GET.get("tag", None),
+            "price_upper_range": self.request.GET.get("PriceUpper", 10000000),
+            "price_lower_range": self.request.GET.get("PriceLower", 0),
+            "search": self.request.GET.get("search", None),
+            "query_type": self.request.GET.get("sort", None),
+        }
 
-        price_upper_range = self.request.GET.get("PriceUpper", 10000000)
-        price_lower_range = self.request.GET.get("PriceLower", 0)
-        search = self.request.GET.get("search", None)
-        query_type = self.request.GET.get("sort", None)
-
+    def get_products_query(self, params):
         q = Q()
+        if params["color_param"]:
+            colors = params["color_param"].split(",")
+            color_query = Q(primary_color__name__in=colors) | Q(
+                secondary_color__name__in=colors
+            )
+            q &= color_query
 
-        if colors:
-            q &= Q(colors__name__in=colors)
-        if category_type and category_type != "모든작품":
-            q &= Q(category__name=category_type)
-        if tag:
-            q &= Q(tags__tag=tag)
+        if params["category_type"] and params["category_type"] != "모든작품":
+            q &= Q(category__name=params["category_type"])
 
-        if price_lower_range != 0 or price_upper_range != 10000000:
-            q &= Q(price__range=(price_lower_range, price_upper_range))
+        if params["tag"]:
+            q &= Q(tags__name=params["tag"])
 
-        if search:
-            q &= (
-                Q(name__icontains=search)
-                | Q(description__icontains=search)
-                | Q(shop__shop_name__exact=search)
-                | Q(colors__name__exact=search)
+        if params["price_lower_range"] != 0 or params["price_upper_range"] != 10000000:
+            q &= Q(
+                price__range=(params["price_lower_range"], params["price_upper_range"])
             )
 
+        if params["search"]:
+            q &= (
+                Q(name__icontains=params["search"])
+                | Q(description__icontains=params["search"])
+                | Q(shop__shop_name__exact=params["search"])
+            )
+
+        return q
+
+    def get_sorted_products(self, products, query_type, offset, limit):
+        if query_type == "created_at":
+            return products.order_by("-created_at")[offset : offset + limit]
+        elif query_type == "price_asc":
+            return products.order_by("price")[offset : offset + limit]
+        elif query_type == "price_desc":
+            return products.order_by("-price")[offset : offset + limit]
+        elif query_type == "discount_desc":
+            return products.order_by("-discount_rate")[offset : offset + limit]
+        elif query_type == "review_desc":
+            return products.annotate(review_count=Count("reviews")).order_by(
+                "-review_count"
+            )[offset : offset + limit]
+        else:
+            return products.order_by("-order_count")[offset : offset + limit]
+
+    def get(self, request):
+        params = self.get_query_params()
+        q = self.get_products_query(params)
         products = Product.objects.filter(q).distinct()
         total_products = products.count()
 
-        if query_type == "created_at":
-            products = products.order_by("-created_at")[offset : offset + limit]
-            serializer = serializers.ProductListSerializer(
-                products,
-                many=True,
-                context={"request": request},
-            )
-            response_data = {
-                "total_count": total_products,
-                "products": serializer.data,
-            }
-            return Response(response_data)
-        elif query_type == "price_asc":
-            products = products.order_by("price")[offset : offset + limit]
-            serializer = serializers.ProductListSerializer(
-                products,
-                many=True,
-                context={"request": request},
-            )
-            response_data = {
-                "total_count": total_products,
-                "products": serializer.data,
-            }
-            return Response(response_data)
-        elif query_type == "price_desc":
-            products = products.order_by("-price")[offset : offset + limit]
-            serializer = serializers.ProductListSerializer(
-                products,
-                many=True,
-                context={"request": request},
-            )
-            response_data = {
-                "total_count": total_products,
-                "products": serializer.data,
-            }
-            return Response(response_data)
-        elif query_type == "discount_desc":
-            products = products.annotate(
-                discount_rate=(1 - (F("price") * 1.0 / F("original_price"))) * 100
-            )
-            products = products.order_by("-discount_rate")[offset : offset + limit]
-            serializer = serializers.ProductListSerializer(
-                products,
-                many=True,
-                context={"request": request},
-            )
-            response_data = {
-                "total_count": total_products,
-                "products": serializer.data,
-            }
-            return Response(response_data)
-        elif query_type == "review_desc":
-            products = products.annotate(review_count=Count("reviews")).order_by(
-                "-review_count"
-            )[offset : offset + limit]
+        sorted_products = self.get_sorted_products(
+            products, params["query_type"], params["offset"], params["limit"]
+        )
+        serializer = serializers.ProductListSerializer(
+            sorted_products,
+            many=True,
+            context={"request": request},
+        )
 
-            serializer = serializers.ProductListSerializer(
-                products,
-                many=True,
-                context={"request": request},
-            )
+        response_data = {
+            "total_count": total_products,
+            "products": serializer.data,
+        }
 
-            response_data = {
-                "total_count": total_products,
-                "products": serializer.data,
-            }
-
-            return Response(response_data)
-        else:
-            products = products.order_by("-order_count")[offset : offset + limit]
-            serializer = serializers.ProductListSerializer(
-                products,
-                many=True,
-                context={"request": request},
-            )
-            response_data = {
-                "total_count": total_products,  # 상품의 총 개수를 응답 데이터에 추가
-                "products": serializer.data,
-            }
-            return Response(response_data)
+        return Response(response_data)
 
 
+# 상품 페이지
 class ProductDetail(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+    # 유저의 최근 본 상품 기록 추가
     def user_viewed(self, timestamp, product):
         user = self.request.user
         if not user.is_authenticated:
@@ -179,6 +131,7 @@ class ProductDetail(APIView):
 
     def get(self, request, pk):
         product = self.get_object(pk)
+        # 상품 조회 시, 최근 본 상품 추가
         self.user_viewed(now(), product)
         serializer = serializers.ProductDetailSerializer(
             product,
@@ -186,34 +139,8 @@ class ProductDetail(APIView):
         )
         return Response(serializer.data)
 
-    def put(self, request, pk):
-        product = self.get_object(pk)
-        # if product.shop.user != request.user:
-        #     raise PermissionDenied
-        serializer = serializers.ProductDetailSerializer(
-            product,
-            data=request.data,
-            partial=True,
-        )
-        if serializer.is_valid():
-            updated_product = serializer.save()
-            return Response(
-                serializers.ProductDetailSerializer(updated_product).data,
-            )
-        else:
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-    def delete(self, request, pk):
-        product = self.get_object(pk)
-        # if product.shop.user != request.user:
-        #     raise PermissionDenied
-        product.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
+# TODO: 하단 reviews, image, video 관련 view 리팩토링
 class ProductReviews(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -471,5 +398,3 @@ class ReviewPhotoList(APIView):
         )
 
         return Response(serializer.data)
-
-

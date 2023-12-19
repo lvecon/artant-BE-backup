@@ -22,12 +22,12 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Color)
 class ColorAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "name")
+    list_display = ("__str__",)
 
 
 @admin.register(ProductTag)
 class ProductTagAdmin(admin.ModelAdmin):
-    list_display = ("tag",)
+    list_display = ("__str__",)
 
 
 @admin.register(Material)

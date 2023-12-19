@@ -4,16 +4,12 @@ from rest_framework.status import HTTP_200_OK
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import (
     NotFound,
-    ParseError,
-    PermissionDenied,
 )
 from products.models import Product
 from shops.models import Shop
 from .models import FavoriteProduct, FavoriteShop
 from django.conf import settings
 from .serializers import FavoriteProductSerializer, FavoriteShopSerializer
-
-# Create your views here.
 
 
 # get specific user's favorite products
@@ -52,6 +48,8 @@ class UserFavoritesProducts(APIView):
 
 
 class FavoriteProductToggle(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get_favoriteProduct(self, user):
         favorite_product, _ = FavoriteProduct.objects.get_or_create(user=user)
         return favorite_product
@@ -111,6 +109,8 @@ class UserFavoritesShops(APIView):
 
 
 class FavoriteShopToggle(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get_favoriteShop(self, user):
         favorite_shop, _ = FavoriteShop.objects.get_or_create(user=user)
         return favorite_shop

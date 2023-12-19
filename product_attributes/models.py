@@ -6,20 +6,20 @@ from . import (
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=256)
-    description = models.CharField(max_length=256, null=True, blank=True)
+    name = models.CharField(max_length=32)
     parent = models.ForeignKey(
         "self",
         null=True,
         blank=True,
         related_name="children",
         on_delete=models.CASCADE,
-    )
-    background_image = models.ImageField(
+    )  # 상위 카테고리 ex) 회화 -> 유화, 수채화
+    level = models.PositiveIntegerField()  # Art & Collections = 1, 회화 = 2, 수채화 = 3
+    description = models.CharField(max_length=256, null=True, blank=True)
+    background_image = models.URLField(
         blank=True,
         null=True,
     )
-    level = models.IntegerField()
 
     def __str__(self):
         return self.name
@@ -27,8 +27,7 @@ class Category(models.Model):
 
 class Color(models.Model):
     name = models.CharField(
-        max_length=20,
-        choices=ProductColorChoices.choices,
+        max_length=20, choices=ProductColorChoices.choices, unique=True
     )
 
     def __str__(self):
@@ -36,14 +35,14 @@ class Color(models.Model):
 
 
 class ProductTag(models.Model):
-    tag = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=32, unique=True)
 
     def __str__(self):
-        return f"{self.tag}"
+        return self.name
 
 
 class Material(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=32, unique=True)
 
     def __str__(self):
-        return f"{self.name}"
+        return self.name
