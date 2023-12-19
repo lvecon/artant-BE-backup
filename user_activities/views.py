@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from products import serializers
 from .models import UserProductTimestamp

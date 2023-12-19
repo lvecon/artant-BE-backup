@@ -1,6 +1,5 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import Max
 from favorites.models import FavoriteProduct
@@ -23,19 +22,19 @@ from product_attributes.serializers import ColorSerializer
 from cart.models import CartLine
 
 
-class ImageSerializer(serializers.ModelSerializer):
+class ImageSerializer(ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ("pk", "image")
 
 
-class VideoSerializer(serializers.ModelSerializer):
+class VideoSerializer(ModelSerializer):
     class Meta:
         model = ProductVideo
         fields = ("pk", "video")
 
 
-class ProductSnapshotSerializer(serializers.ModelSerializer):
+class ProductSnapshotSerializer(ModelSerializer):
     class Meta:
         model = Product
         fields = (
@@ -46,7 +45,7 @@ class ProductSnapshotSerializer(serializers.ModelSerializer):
         )
 
 
-class TinyProductVariantSerializer(serializers.ModelSerializer):
+class TinyProductVariantSerializer(ModelSerializer):
     option_one = VariationOptionSerializer(read_only=True)
     option_two = VariationOptionSerializer(read_only=True)
 
@@ -60,7 +59,8 @@ class TinyProductVariantSerializer(serializers.ModelSerializer):
         )
 
 
-class ProductDetailSerializer(serializers.ModelSerializer):
+# TODO: images, video 보다 간략하게 수정하기.
+class ProductDetailSerializer(ModelSerializer):
     rating = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     is_star_seller = serializers.SerializerMethodField()
@@ -74,7 +74,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     shipping_date = serializers.SerializerMethodField()
     cart_count = serializers.SerializerMethodField()
     images = ImageSerializer(many=True, read_only=True)
-    colors = ColorSerializer(many=True, read_only=True)
     video = VideoSerializer()
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
@@ -110,7 +109,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "is_return_exchange_available",
             "is_frame_included",
             "is_artant_choice",
-            "colors",
             "product_item_type",
             "is_giftcard_available",
             "is_gift_wrapping_available",
@@ -239,7 +237,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return product.reviews.count()
 
 
-class ProductListSerializer(serializers.ModelSerializer):
+class ProductListSerializer(ModelSerializer):
     rating = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
@@ -313,7 +311,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         return product.reviews.count()
 
 
-class TinyProductSerializer(serializers.ModelSerializer):
+class TinyProductSerializer(ModelSerializer):
     class Meta:
         model = Product
         fields = (
@@ -325,8 +323,8 @@ class TinyProductSerializer(serializers.ModelSerializer):
         )
 
 
-# 유효성 검사 더 구체적으로 가능하게 하기 TODO: Variation 기획 변경으로 모델 및 관련 로직 전면 수정
-class ProductCreateSerializer(serializers.ModelSerializer):
+# TODO: Variation 기획 변경으로 모델 및 관련 로직 전면 수정
+class ProductCreateSerializer(ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
@@ -563,7 +561,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
 # 상품 정보 수정
-class ProductUpdateSerializer(serializers.ModelSerializer):
+class ProductUpdateSerializer(ModelSerializer):
     # SerializerMethodField를 사용하여 읽기 전용 필드를 정의
     # variations = serializers.SerializerMethodField()
     # variants = serializers.SerializerMethodField()
@@ -777,7 +775,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         return obj.video.video if hasattr(obj, "video") and obj.video else None
 
 
-class ProductImageSerializer(serializers.ModelSerializer):
+class ProductImageSerializer(ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ["image", "order"]
