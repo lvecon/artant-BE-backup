@@ -1,23 +1,61 @@
-# EC2 Deployment
+# Install Dependencies
 
-# install python > 3.11 via pyenv
 First, the project requires python version above 3.11. If not, install pyenv:
 
-sudo yum update
-sudo yum install gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel
+`curl https://pyenv.run | bash`
 
-git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+After installation, check the log message and follow the instruction to add pyenv to your shell. (Modify `~/.bashrc`)
 
-echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bashrc
-source ~/.bashrc
+Then, install python 3.11.0:
 
-pyenv install 3.11.5
-pyenv global 3.11.5
+`pyenv install 3.11.0`
 
-python --version
+Then set the global python version:
 
+`pyenv global 3.11.0`
+
+After python version above 3.11 is installed, install poetry:
+
+`curl -sSL https://install.python-poetry.org | python3 -`
+
+Then navigate to backend root and run:
+
+`poetry install`
+
+# On adding new dependencies
+
+- Use `poetry add <package-name>` instead of `pip install <package-name>`
+- After package is added by others, run `poetry install` to install the new package
+
+
+# Environment Variable
+Get your environment variable from [https://www.notion.so/Environment-Variable-22dcf6d95d294957a6e9b518005cc4ca?pvs=4](https://www.notion.so/Backend-Secrets-ff31e54c0f5d4ff3bde06e4c0cd8b98e?pvs=4)
+
+```
+# AWS-RDS
+RDS_DB_NAME=xxxx
+RDS_USERNAME=xxxx
+RDS_PASSWORD=xxxx
+RDS_HOSTNAME=xxxx
+
+# CloudFlare
+CF_TOKEN=xxxx
+CF_ID=xxxx
+```
+
+# Migrate
+`poetry run python manage.py makemigrations`
+`poetry run python manage.py migrate`
+
+# Run
+`poetry run python manage.py runserver`
+
+# Admin Account
+
+- Check admin account from [https://www.notion.so/Environment-Variable-22dcf6d95d294957a6e9b518005cc4ca?pvs=4](https://www.notion.so/Backend-Secrets-ff31e54c0f5d4ff3bde06e4c0cd8b98e?pvs=4)
+- Login as admin in `/admin`
+
+# 아래는 EC2 설정
 # install git & poetry
 
 sudo yum install git
