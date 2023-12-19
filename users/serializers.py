@@ -76,7 +76,7 @@ class UserSerializer(serializers.ModelSerializer):
             "description",
             "username",
             "avatar",
-        ]  # Include other relevant fields
+        ]  # Include other relevant fieldsㅌㅈ
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):

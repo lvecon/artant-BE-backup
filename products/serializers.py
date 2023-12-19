@@ -1,16 +1,15 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
-
+from django.db import transaction
+from django.db.models import Max
 from favorites.models import FavoriteProduct
 from .models import (
     Product,
     ProductImage,
     ProductVideo,
 )
-from product_variants.models import (
-    ProductVariant,
-)
+from product_variants.models import ProductVariant, Variation, VariationOption
 from product_attributes.models import Category, Color, ProductTag, Material
 from shops.models import Section
 from datetime import datetime, timedelta
@@ -326,7 +325,7 @@ class TinyProductSerializer(serializers.ModelSerializer):
         )
 
 
-# 유효성 검사 더 구체적으로 가능하게 하기 TODO: validate method 추가
+# 유효성 검사 더 구체적으로 가능하게 하기 TODO: Variation 기획 변경으로 모델 및 관련 로직 전면 수정
 class ProductCreateSerializer(serializers.ModelSerializer):
     primary_color = serializers.SerializerMethodField()
     secondary_color = serializers.SerializerMethodField()
@@ -339,6 +338,30 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     variations = VariationSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     thumbnail = serializers.URLField(read_only=True)
+
+    # 쓰기 전용 필드
+    category_name_input = serializers.CharField(write_only=True)
+    primary_color_input = serializers.CharField(write_only=True, required=False)
+    secondary_color_input = serializers.CharField(write_only=True, required=False)
+    tags_input = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False
+    )
+    section_input = serializers.CharField(
+        write_only=True, allow_blank=True, required=False
+    )
+    materials_input = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False
+    )
+    images_input = serializers.ListField(child=serializers.URLField(), write_only=True)
+    video_input = serializers.CharField(
+        write_only=True, allow_blank=True, required=False
+    )
+    # variations_input = serializers.ListField(
+    #     child=serializers.DictField(), write_only=True, required=False
+    # )
+    # variants_input = serializers.ListField(
+    #     child=serializers.DictField(), write_only=True, required=False
+    # )
 
     class Meta:
         model = Product
@@ -370,6 +393,16 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "personalization_guide",
             "variations",
             "variants",
+            "category_name_input",
+            "primary_color_input",
+            "secondary_color_input",
+            "tags_input",
+            "section_input",
+            "materials_input",
+            "images_input",
+            "video_input",
+            # "variations_input",
+            # "variants_input",
         ]
 
     def get_primary_color(self, obj):
@@ -396,6 +429,136 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     def get_video(self, obj):
         return obj.video.video if hasattr(obj, "video") and obj.video else None
+
+    def create(self, validated_data):
+        # 사용자 정의 필드 처리
+        shop_pk = validated_data.get("shop")
+        category_name = validated_data.pop("category_name_input")
+        primary_color_name = validated_data.pop("primary_color_input", None)
+        secondary_color_name = validated_data.pop("secondary_color_input", None)
+        tags_data = validated_data.pop("tags_input", [])
+        section_title = validated_data.pop("section_input", None)
+        materials_data = validated_data.pop("materials_input", [])
+        images_data = validated_data.pop("images_input", [])
+        video_url = validated_data.pop("video_input", None)
+        # variations_data = validated_data.pop("variations_input", [])
+        # variants_data = validated_data.pop("variants_input", [])
+
+        with transaction.atomic():  # 트랜잭션 시작. 추가 필드 처리에서 에러 발생 시 상품 생성 방지
+            # 상품 객체 생성
+            product = Product.objects.create(**validated_data)
+
+            # 추가 필드 처리
+            self.set_category(product, category_name)
+            self.set_colors(product, primary_color_name, secondary_color_name)
+            self.set_section(product, section_title, shop_pk)
+            self.set_materials(product, materials_data)
+            self.set_tags(product, tags_data)
+            self.process_images(product, images_data)
+            self.create_video(product, video_url)
+
+            return product
+
+    def set_category(self, product, category_name):
+        if category_name:
+            category = Category.objects.get(name=category_name)
+            product.category.add(category)
+            if category.parent:
+                product.category.add(category.parent)
+
+    def set_colors(self, product, primary_color_name, secondary_color_name):
+        if primary_color_name:
+            primary_color = Color.objects.get(name=primary_color_name)
+            product.primary_color = primary_color
+        if secondary_color_name:
+            secondary_color = Color.objects.get(name=secondary_color_name)
+            product.secondary_color = secondary_color
+        product.save()
+
+    def set_section(self, product, section_title, shop_pk):
+        if section_title:
+            section, created = Section.objects.get_or_create(
+                title=section_title, shop_id=shop_pk
+            )
+            if created:
+                max_order = (
+                    Section.objects.filter(shop_id=shop_pk).aggregate(Max("order"))[
+                        "order__max"
+                    ]
+                    or 0
+                )
+                section.order = max_order + 1
+                section.save()
+            product.section = section
+            product.save()
+            product.save()
+
+    def set_materials(self, product, materials_data):
+        for material_name in materials_data:
+            material, _ = Material.objects.get_or_create(name=material_name)
+            product.materials.add(material)
+
+    def set_tags(self, product, tags_data):
+        for tag_name in tags_data:
+            tag, _ = ProductTag.objects.get_or_create(name=tag_name)
+            product.tags.add(tag)
+
+    def process_images(self, product, images_data):
+        for index, image_url in enumerate(images_data, start=1):
+            ProductImage.objects.create(product=product, image=image_url, order=index)
+            if index == 1:
+                product.thumbnail = image_url
+                product.save()
+
+    def create_video(self, product, video_url):
+        if video_url:
+            ProductVideo.objects.create(product=product, video=video_url)
+
+    # def create_variations(self, product, variations_data):
+    #     for index, variation_data in enumerate(variations_data, start=1):
+    #         variation = Variation.objects.create(
+    #             product=product,
+    #             name=variation_data["name"],
+    #             is_sku_vary=variation_data["is_sku_vary"],
+    #             is_price_vary=variation_data.get("is_price_vary", False),
+    #             is_quantity_vary=variation_data.get("is_quantity_vary", False),
+    #             order=index,
+    #         )
+    #         self.create_variation_options(variation, variation_data.get("options", []))
+
+    # def create_variation_options(self, variation, options_data):
+    #     for index, option_data in enumerate(options_data, start=1):
+    #         VariationOption.objects.create(
+    #             variation=variation,
+    #             name=option_data["name"],
+    #             order=index,
+    #         )
+
+    # def create_variants(self, variants_data, product):
+    #     for index, variant_data in enumerate(variants_data, start=1):
+    #         option_one, option_two = self.get_variant_options(variant_data, product)
+    #         ProductVariant.objects.create(
+    #             product=product,
+    #             option_one=option_one,
+    #             option_two=option_two,
+    #             sku=variant_data.get("sku", ""),
+    #             price=variant_data.get("price", 0),
+    #             quantity=variant_data.get("quantity", 0),
+    #             is_visible=variant_data.get("is_visible", True),
+    #             order=index,
+    #         )
+
+    # def get_variant_options(self, variant_data, product):
+    #     option_one = self.get_option(variant_data.get("option_one"), product)
+    #     option_two = self.get_option(variant_data.get("option_two"), product)
+    #     return option_one, option_two
+
+    # def get_option(self, option_name, product):
+    #     if option_name:
+    #         return VariationOption.objects.filter(
+    #             name=option_name,
+    #             variation__product=product,
+    #         ).first()
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):

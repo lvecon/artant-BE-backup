@@ -2,20 +2,17 @@ from time import sleep
 from django.db.models import Count
 from django.db.models import F
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.exceptions import ParseError, NotFound
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.db.models import Max
-from shops.models import Shop, Section, ShopImage, ShopVideo
+from shops.models import Shop, Section
 from products.models import Product, Color, ProductImage, ProductVideo
 from product_attributes.models import Category, Material, ProductTag
 from product_variants.models import ProductVariant, Variation, VariationOption
-from reviews.models import Review
 from . import serializers
 from reviews.serializers import ReviewSerializer
 from products.serializers import (
@@ -133,77 +130,16 @@ class ShopDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ShopReviews(APIView):
-    def get_object(self, pk):
-        try:
-            return Shop.objects.get(pk=pk)
-        except Shop.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk):
-        try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
-        except ValueError:
-            page = 1
-        query_type = self.request.GET.get("sort", None)
-        page_size = settings.PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
-        shop = self.get_object(pk)
-
-        products = shop.products.all()
-        all_reviews = []
-        for product in products:
-            reviews = product.reviews.all()
-            all_reviews.extend(reviews)
-
-        total_reviews = len(all_reviews)
-
-        if query_type == "created_at":
-            all_reviews_sorted = sorted(
-                all_reviews, key=lambda x: x.created_at, reverse=True
-            )
-            serializer = ReviewSerializer(
-                all_reviews_sorted[start:end],
-                many=True,
-            )
-
-            response_data = {
-                "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
-                "reviews": serializer.data,
-            }
-
-            return Response(response_data)
-
-        else:  # suggested
-            all_reviews = sorted(
-                all_reviews,
-                key=lambda x: (
-                    len(x.content),
-                    x.rating * 100 + x.images.count() * 40,
-                ),
-                reverse=True,
-            )
-            serializer = ReviewSerializer(
-                all_reviews[start:end],
-                many=True,
-            )
-
-            response_data = {
-                "total_count": total_reviews,
-                "reviews": serializer.data,
-            }
-            return Response(response_data)
-
-
 class ShopProducts(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get_object(self, pk):
         try:
             return Shop.objects.get(pk=pk)
         except Shop.DoesNotExist:
             raise NotFound
 
+    # 특정 상점의 상품 목록 가져오기. query_params: section, pagination
     def get(self, request, shop_pk):
         shop = self.get_object(shop_pk)
         products = shop.products.all()
@@ -225,23 +161,21 @@ class ShopProducts(APIView):
                     {"error": "section not found"}, status=status.HTTP_400_BAD_REQUEST
                 )
 
+        # 페이지네이션
         try:
             page = int(request.query_params.get("page", 1))
         except ValueError:
             page = 1
-
         page_size = settings.SHOP_PRODUCT_PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
 
         total_count = products.count()  # Get the total count of products
-
         serializer = ProductListSerializer(
             products[start:end],
             many=True,
             context={"request": request},
         )
-
         response_data = {
             "total_count": total_count,
             "products": serializer.data,
@@ -251,226 +185,196 @@ class ShopProducts(APIView):
 
     def post(self, request, shop_pk):
         user = request.user
-        # 사용자의 상점과 요청된 상점 ID가 일치하는지 확인
-        if not user.shop.pk == shop_pk:
+
+        # 상점 소유 여부 확인
+        if user.shop.pk != shop_pk:
             return Response(
                 {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
             )
 
+        # 요청 데이터에 상점 ID 추가
         data = request.data.copy()
         data["shop"] = shop_pk
 
-        serializer = ProductCreateSerializer(data=data)
+        # 상품 생성 시리얼라이저 호출
+        serializer = ProductCreateSerializer(data=data, context={"request": request})
         if serializer.is_valid():
-            # 카테고리와 색상 처리
-            category = self.get_category(request)
-            primary_color, secondary_color = self.get_colors(request)
-
-            # 상품 저장
-            product = serializer.save()
-
-            # 섹션 처리 및 상품에 섹션 정보 추가
-            self.set_section(data, shop_pk, product)
-
-            # Variation, Variant, Material, Tag, Image
-            self.create_variations(
-                variations_data=request.data.get("variations", []), product=product
-            )
-            self.create_variants(
-                variants_data=request.data.get("variants", []), product=product
-            )
-            self.set_materials_and_tags(
-                materials_data=request.data.get("materials", []),
-                tags_data=request.data.get("tags", []),
-                product=product,
-            )
-            self.process_images(
-                images_data=request.data.get("images", []), product=product
-            )
-            self.create_video(
-                video_url=request.data.get("video", None), product=product
-            )
-            # 카테고리, 색상 추가 및 저장
-            product.category.add(category.id)
-            product.primary_color = primary_color
-            product.secondary_color = secondary_color
-            product.save()
-            # 상위 카테고리 추가
-            if category.parent:
-                product.category.add(category.parent.id)
-
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # # 상점에 상품 등록
+    # def post(self, request, shop_pk):
+    #     user = request.user
+    #     # 사용자의 상점과 요청된 상점 ID가 일치하는지 확인
+    #     if not user.shop.pk == shop_pk:
+    #         return Response(
+    #             {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
+    #         )
 
-    def get_category(self, request):
-        category_name = request.data.get("category_name")
-        category = get_object_or_404(Category, name=category_name)
-        return category
+    #     data = request.data.copy()
+    #     data["shop"] = shop_pk
 
-    # primary color, secondary color 처리
-    def get_colors(self, request):
-        primary_color_name = request.data.get("primary_color")
-        secondary_color_name = request.data.get("secondary_color")
+    #     serializer = ProductCreateSerializer(data=data)
+    #     if serializer.is_valid():
+    #         # 카테고리와 색상 처리
+    #         category = self.get_category(request)
+    #         primary_color, secondary_color = self.get_colors(request)
 
-        try:
-            primary_color = (
-                Color.objects.get(name=primary_color_name)
-                if primary_color_name
-                else None
-            )
-            secondary_color = (
-                Color.objects.get(name=secondary_color_name)
-                if secondary_color_name
-                else None
-            )
-        except Color.DoesNotExist:
-            raise serializers.ValidationError({"color": "Invalid color name"})
+    #         # 상품 저장
+    #         product = serializer.save()
 
-        return primary_color, secondary_color
+    #         # 섹션 처리 및 상품에 섹션 정보 추가
+    #         self.set_section(data, shop_pk, product)
 
-    def set_section(self, data, shop_pk, product):
-        section_title = data.get("section")
-        if section_title:
-            section, created = Section.objects.get_or_create(
-                title=section_title, shop_id=shop_pk
-            )
-            if created:
-                max_order = (
-                    Section.objects.filter(shop_id=shop_pk).aggregate(Max("order"))[
-                        "order__max"
-                    ]
-                    or 0
-                )
-                section.order = max_order + 1
-                section.save()
-            product.section = section
-            product.save()
-            return section
+    #         # Variation, Variant, Material, Tag, Image
+    #         self.create_variations(
+    #             variations_data=request.data.get("variations", []), product=product
+    #         )
+    #         self.create_variants(
+    #             variants_data=request.data.get("variants", []), product=product
+    #         )
+    #         self.set_materials_and_tags(
+    #             materials_data=request.data.get("materials", []),
+    #             tags_data=request.data.get("tags", []),
+    #             product=product,
+    #         )
+    #         self.process_images(
+    #             images_data=request.data.get("images", []), product=product
+    #         )
+    #         self.create_video(
+    #             video_url=request.data.get("video", None), product=product
+    #         )
+    #         # 카테고리, 색상 추가 및 저장
+    #         product.category.add(category.id)
+    #         product.primary_color = primary_color
+    #         product.secondary_color = secondary_color
+    #         product.save()
+    #         # 상위 카테고리 추가
+    #         if category.parent:
+    #             product.category.add(category.parent.id)
 
-    def create_variations(self, variations_data, product):
-        for index, variation_data in enumerate(variations_data, start=1):
-            variation = Variation.objects.create(
-                name=variation_data["name"],
-                product=product,
-                is_sku_vary=variation_data["is_sku_vary"],
-                is_price_vary=variation_data.get("is_price_vary", False),
-                is_quantity_vary=variation_data.get("is_quantity_vary", False),
-                order=index,
-            )
-            for index, option_data in enumerate(
-                variation_data.get("options", []), start=1
-            ):
-                VariationOption.objects.create(
-                    name=option_data["name"],
-                    variation=variation,
-                    order=index,
-                )
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def create_variants(self, variants_data, product):
-        for index, variant_data in enumerate(variants_data, start=1):
-            option_one, option_two = self.get_variant_options(variant_data, product)
-            ProductVariant.objects.create(
-                product=product,
-                option_one=option_one,
-                option_two=option_two,
-                sku=variant_data.get("sku", ""),
-                price=variant_data.get("price", 0),
-                quantity=variant_data.get("quantity", 0),
-                is_visible=variant_data.get("is_visible", True),
-                order=index,
-            )
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_variant_options(self, variant_data, product):
-        option_one = self.get_option(variant_data.get("option_one"), product)
-        option_two = self.get_option(variant_data.get("option_two"), product)
-        return option_one, option_two
+    # def get_category(self, request):
+    #     category_name = request.data.get("category_name")
+    #     category = get_object_or_404(Category, name=category_name)
+    #     return category
 
-    def get_option(self, option_name, product):
-        if option_name:
-            return VariationOption.objects.filter(
-                name=option_name,
-                variation__product=product,
-            ).first()
+    # # primary color, secondary color 처리
+    # def get_colors(self, request):
+    #     primary_color_name = request.data.get("primary_color")
+    #     secondary_color_name = request.data.get("secondary_color")
 
-    def set_materials_and_tags(self, materials_data, tags_data, product):
-        for material_name in materials_data:
-            material, _ = Material.objects.get_or_create(name=material_name)
-            product.materials.add(material)
-        for tag_name in tags_data:
-            tag, _ = ProductTag.objects.get_or_create(name=tag_name)
-            product.tags.add(tag)
+    #     try:
+    #         primary_color = (
+    #             Color.objects.get(name=primary_color_name)
+    #             if primary_color_name
+    #             else None
+    #         )
+    #         secondary_color = (
+    #             Color.objects.get(name=secondary_color_name)
+    #             if secondary_color_name
+    #             else None
+    #         )
+    #     except Color.DoesNotExist:
+    #         raise serializers.ValidationError({"color": "Invalid color name"})
 
-    def process_images(self, images_data, product):
-        thumbnail_url = None
-        for index, image_data in enumerate(images_data, start=1):
-            image_obj = ProductImage.objects.create(
-                product=product,
-                image=image_data,
-                order=index,
-            )
-            if index == 1:
-                thumbnail_url = image_obj.image
+    #     return primary_color, secondary_color
 
-        if thumbnail_url:
-            product.thumbnail = thumbnail_url
-            product.save()
+    # def set_section(self, data, shop_pk, product):
+    #     section_title = data.get("section")
+    #     if section_title:
+    #         section, created = Section.objects.get_or_create(
+    #             title=section_title, shop_id=shop_pk
+    #         )
+    #         if created:
+    #             max_order = (
+    #                 Section.objects.filter(shop_id=shop_pk).aggregate(Max("order"))[
+    #                     "order__max"
+    #                 ]
+    #                 or 0
+    #             )
+    #             section.order = max_order + 1
+    #             section.save()
+    #         product.section = section
+    #         product.save()
+    #         return section
 
-    def create_video(self, video_url, product):
-        if video_url:
-            ProductVideo.objects.create(video=video_url, product=product)
+    # def create_variations(self, variations_data, product):
+    #     for index, variation_data in enumerate(variations_data, start=1):
+    #         variation = Variation.objects.create(
+    #             name=variation_data["name"],
+    #             product=product,
+    #             is_sku_vary=variation_data["is_sku_vary"],
+    #             is_price_vary=variation_data.get("is_price_vary", False),
+    #             is_quantity_vary=variation_data.get("is_quantity_vary", False),
+    #             order=index,
+    #         )
+    #         for index, option_data in enumerate(
+    #             variation_data.get("options", []), start=1
+    #         ):
+    #             VariationOption.objects.create(
+    #                 name=option_data["name"],
+    #                 variation=variation,
+    #                 order=index,
+    #             )
 
+    # def create_variants(self, variants_data, product):
+    #     for index, variant_data in enumerate(variants_data, start=1):
+    #         option_one, option_two = self.get_variant_options(variant_data, product)
+    #         ProductVariant.objects.create(
+    #             product=product,
+    #             option_one=option_one,
+    #             option_two=option_two,
+    #             sku=variant_data.get("sku", ""),
+    #             price=variant_data.get("price", 0),
+    #             quantity=variant_data.get("quantity", 0),
+    #             is_visible=variant_data.get("is_visible", True),
+    #             order=index,
+    #         )
 
-class ReviewPhotos(APIView):
-    def get_object(self, pk):
-        try:
-            return Shop.objects.get(pk=pk)
-        except Shop.DoesNotExist:
-            raise NotFound
+    # def get_variant_options(self, variant_data, product):
+    #     option_one = self.get_option(variant_data.get("option_one"), product)
+    #     option_two = self.get_option(variant_data.get("option_two"), product)
+    #     return option_one, option_two
 
-    def get(self, request, pk, product_pk):
-        try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
-        except ValueError:
-            page = 1
+    # def get_option(self, option_name, product):
+    #     if option_name:
+    #         return VariationOption.objects.filter(
+    #             name=option_name,
+    #             variation__product=product,
+    #         ).first()
 
-        page_size = settings.REVIEW_IMAGE_PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
-        shop = self.get_object(pk)
-        product_name = Product.objects.get(pk=product_pk).name
+    # def set_materials_and_tags(self, materials_data, tags_data, product):
+    #     for material_name in materials_data:
+    #         material, _ = Material.objects.get_or_create(name=material_name)
+    #         product.materials.add(material)
+    #     for tag_name in tags_data:
+    #         tag, _ = ProductTag.objects.get_or_create(name=tag_name)
+    #         product.tags.add(tag)
 
-        products = shop.products.all()
-        all_reviews = []
-        for product in products:
-            reviews = product.reviews.filter(images__isnull=False)
-            all_reviews.extend(reviews)
+    # def process_images(self, images_data, product):
+    #     thumbnail_url = None
+    #     for index, image_data in enumerate(images_data, start=1):
+    #         image_obj = ProductImage.objects.create(
+    #             product=product,
+    #             image=image_data,
+    #             order=index,
+    #         )
+    #         if index == 1:
+    #             thumbnail_url = image_obj.image
 
-        all_reviews_sorted = sorted(
-            all_reviews, key=lambda x: x.created_at, reverse=True
-        )
+    #     if thumbnail_url:
+    #         product.thumbnail = thumbnail_url
+    #         product.save()
 
-        same_product_reviews = []
-        other_reviews = []
-        for review in all_reviews_sorted:
-            if review.product.name == product_name:
-                same_product_reviews.append(review)
-            else:
-                other_reviews.append(review)
-
-        all_reviews_with_images = same_product_reviews + other_reviews
-
-        images = [
-            image.image
-            for review in all_reviews_with_images
-            for image in review.images.all()
-        ][start:end]
-
-        response_data = {
-            "images": images,
-        }
-        return Response(response_data)
+    # def create_video(self, video_url, product):
+    #     if video_url:
+    #         ProductVideo.objects.create(video=video_url, product=product)
 
 
 class ProductUpdate(APIView):
@@ -541,3 +445,119 @@ class Sections(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ReviewPhotos(APIView):
+    def get_object(self, pk):
+        try:
+            return Shop.objects.get(pk=pk)
+        except Shop.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk, product_pk):
+        try:
+            page = request.query_params.get("page", 1)  # ( ,default value)
+            page = int(page)  # Type change
+        except ValueError:
+            page = 1
+
+        page_size = settings.REVIEW_IMAGE_PAGE_SIZE
+        start = (page - 1) * page_size
+        end = start + page_size
+        shop = self.get_object(pk)
+        product_name = Product.objects.get(pk=product_pk).name
+
+        products = shop.products.all()
+        all_reviews = []
+        for product in products:
+            reviews = product.reviews.filter(images__isnull=False)
+            all_reviews.extend(reviews)
+
+        all_reviews_sorted = sorted(
+            all_reviews, key=lambda x: x.created_at, reverse=True
+        )
+
+        same_product_reviews = []
+        other_reviews = []
+        for review in all_reviews_sorted:
+            if review.product.name == product_name:
+                same_product_reviews.append(review)
+            else:
+                other_reviews.append(review)
+
+        all_reviews_with_images = same_product_reviews + other_reviews
+
+        images = [
+            image.image
+            for review in all_reviews_with_images
+            for image in review.images.all()
+        ][start:end]
+
+        response_data = {
+            "images": images,
+        }
+        return Response(response_data)
+
+
+class ShopReviews(APIView):
+    def get_object(self, pk):
+        try:
+            return Shop.objects.get(pk=pk)
+        except Shop.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        try:
+            page = request.query_params.get("page", 1)  # ( ,default value)
+            page = int(page)  # Type change
+        except ValueError:
+            page = 1
+        query_type = self.request.GET.get("sort", None)
+        page_size = settings.PAGE_SIZE
+        start = (page - 1) * page_size
+        end = start + page_size
+        shop = self.get_object(pk)
+
+        products = shop.products.all()
+        all_reviews = []
+        for product in products:
+            reviews = product.reviews.all()
+            all_reviews.extend(reviews)
+
+        total_reviews = len(all_reviews)
+
+        if query_type == "created_at":
+            all_reviews_sorted = sorted(
+                all_reviews, key=lambda x: x.created_at, reverse=True
+            )
+            serializer = ReviewSerializer(
+                all_reviews_sorted[start:end],
+                many=True,
+            )
+
+            response_data = {
+                "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
+                "reviews": serializer.data,
+            }
+
+            return Response(response_data)
+
+        else:  # suggested
+            all_reviews = sorted(
+                all_reviews,
+                key=lambda x: (
+                    len(x.content),
+                    x.rating * 100 + x.images.count() * 40,
+                ),
+                reverse=True,
+            )
+            serializer = ReviewSerializer(
+                all_reviews[start:end],
+                many=True,
+            )
+
+            response_data = {
+                "total_count": total_reviews,
+                "reviews": serializer.data,
+            }
+            return Response(response_data)

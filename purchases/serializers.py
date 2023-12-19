@@ -2,11 +2,8 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 from .models import Purchase, PurchaseLine
 from products.serializers import (
-    ProductListSerializer,
-    # VariantValueSerializer,
     ProductDetailSerializer,
 )
-from users.serializers import TinyUserSerializer
 
 
 class PurchaseLineSerializer(ModelSerializer):

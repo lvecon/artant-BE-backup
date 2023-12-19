@@ -3,7 +3,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from . import views
 
 urlpatterns = [
-    # 상점 목록 및 관련 상점 정보 조회
+    # 상점 등록. 상점 목록 및 관련 상점 정보 조회
     path("", views.Shops.as_view(), name="shops"),
     path("banners", views.ShopBanners.as_view(), name="shop_banners"),
     path("featured-shops", views.FeaturedShops.as_view(), name="featured_shops"),
