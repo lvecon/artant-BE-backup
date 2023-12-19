@@ -93,6 +93,7 @@ class Shops(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# 상점 상세 조회, 수정, 삭제 담당
 class ShopDetail(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -117,44 +118,11 @@ class ShopDetail(APIView):
                 {"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN
             )
 
-        sections_data = request.data.get("sections")
-        if sections_data:
-            # 섹션의 title 중복 확인 TODO: 프론트에서 확인할지 논의
-            titles = [section.get("title") for section in sections_data]
-            if len(titles) != len(set(titles)):
-                return Response(
-                    {"error": "Duplicate section titles found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        images_data = request.data.get("images")
-
         serializer = serializers.ShopUpdateSerializer(
             shop, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
-            # 섹션 정보 업데이트 (sections 키가 있는 경우에만)
-            if sections_data is not None:
-                self.update_sections(sections_data, shop)
-            # 이미지 정보 업데이트 (images 키가 있는 경우에만)
-            if images_data is not None:
-                self.update_images(images_data, shop)
-
-            # 비디오 정보 업데이트
-            video_url = request.data.get("video", None)
-            if video_url is not None:
-                if video_url == "" and hasattr(shop, "video"):
-                    # 비디오가 ""이고 shop에 비디오가 있는 경우, 비디오 삭제
-                    shop.video.delete()
-                elif video_url:
-                    # 비디오 URL이 존재하면 기존 비디오 업데이트 또는 새 비디오 생성
-                    if hasattr(shop, "video"):
-                        shop.video.video = video_url
-                        shop.video.save()
-                    else:
-                        ShopVideo.objects.create(video=video_url, shop=shop)
-            # 'video' 필드가 없거나 값이 None인 경우 아무것도 하지 않음
-
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -163,65 +131,6 @@ class ShopDetail(APIView):
         shop.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def update_sections(self, sections_data, shop):
-        existing_sections = set(shop.sections.all())
-        updated_sections = set()
-
-        for index, section_data in enumerate(sections_data, start=1):
-            section_id = section_data.get("id")
-            section_title = section_data.get("title")
-            section_order = index
-
-            if section_id:
-                # 기존 섹션 업데이트
-                section = shop.sections.get(id=section_id)
-                for key, value in section_data.items():
-                    if (
-                        key != "order"
-                    ):  # Skip updating order from request data. TODO: is it necessary?
-                        setattr(section, key, value)
-                section.order = section_order
-                section.save()
-                updated_sections.add(section)
-            else:
-                # 새 섹션 추가
-                section_data["order"] = section_order
-                new_section = Section.objects.create(**section_data, shop=shop)
-                updated_sections.add(new_section)
-
-        # 삭제되어야 하는 섹션 찾기 및 삭제 TODO: 삭제 허용에 대한 의논. 기존에 연결된 상품 어떻게 할지
-        sections_to_delete = existing_sections - updated_sections
-        for section in sections_to_delete:
-            section.delete()
-
-    def update_images(self, images_data, shop):
-        existing_images = set(shop.images.all())
-        updated_images = set()
-
-        for index, image_data in enumerate(images_data, start=1):
-            image_id = image_data.get("id")
-            image_order = index
-            if image_id:
-                # 기존 이미지 업데이트
-                image = shop.images.get(id=image_id)
-                for key, value in image_data.items():
-                    if (
-                        key != "order"
-                    ):  # Skip updating order from request data TODO: is it necessary?
-                        setattr(image, key, value)
-                image.order = image_order
-                image.save()
-                updated_images.add(image)
-            else:
-                # 새 이미지 추가
-                image_data["order"] = image_order
-                new_image = ShopImage.objects.create(**image_data, shop=shop)
-                updated_images.add(new_image)
-
-        # 삭제되어야 하는 이미지 찾기 및 삭제
-        for image in existing_images - updated_images:
-            image.delete()
 
 
 class ShopReviews(APIView):
