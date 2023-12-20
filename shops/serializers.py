@@ -46,6 +46,7 @@ class RecommendedShopSerializer(ModelSerializer):
         return list(thumbnails)
 
 
+# 상점 상세 정보
 class ShopDetailSerializer(ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
@@ -146,6 +147,7 @@ class ShopCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+# 상점 정보 업데이트
 class ShopUpdateSerializer(serializers.ModelSerializer):
     # 읽기 전용
     sections_info = serializers.SerializerMethodField()
@@ -159,7 +161,9 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
         child=serializers.JSONField(), write_only=True, required=False
     )
     video_input = serializers.CharField(
-        write_only=True, allow_blank=True, required=False
+        write_only=True,
+        required=False,
+        allow_blank=True,
     )
 
     class Meta:
@@ -224,8 +228,6 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        print(video_data)
-
         # 섹션, 이미지, 비디오 업데이트 로직
         if sections_data is not None:
             self.update_sections(sections_data, instance)
@@ -233,7 +235,8 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             self.update_images(images_data, instance)
         if video_data is not None:
             self.update_video(video_data, instance)
-
+        # 모든 업데이트 후에 instance를 다시 조회합니다.
+        instance.refresh_from_db()
         return instance
 
     # update_sections, update_images, update_video 메서드 정의
@@ -300,7 +303,13 @@ class ShopUpdateSerializer(serializers.ModelSerializer):
             shop.video.delete()
 
 
-class SectionSerializer(serializers.ModelSerializer):
+class ShopSectionSerializer(serializers.ModelSerializer):
+    sections = serializers.SerializerMethodField()
+
     class Meta:
-        model = Section
-        fields = ["id", "title", "order"]
+        model = Shop
+        fields = ["sections"]
+
+    def get_sections(self, shop):
+        sections = shop.sections.order_by("order").values_list("title", flat=True)
+        return list(sections)
