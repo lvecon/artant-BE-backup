@@ -525,18 +525,15 @@ class ProductCreateSerializer(ModelSerializer):
     #         variation = Variation.objects.create(
     #             product=product,
     #             name=variation_data["name"],
-    #             is_sku_vary=variation_data["is_sku_vary"],
-    #             is_price_vary=variation_data.get("is_price_vary", False),
-    #             is_quantity_vary=variation_data.get("is_quantity_vary", False),
     #             order=index,
     #         )
     #         self.create_variation_options(variation, variation_data.get("options", []))
 
     # def create_variation_options(self, variation, options_data):
-    #     for index, option_data in enumerate(options_data, start=1):
+    #     for index, option_name in enumerate(options_data, start=1):
     #         VariationOption.objects.create(
     #             variation=variation,
-    #             name=option_data["name"],
+    #             name=option_name,
     #             order=index,
     #         )
 
@@ -555,16 +552,9 @@ class ProductCreateSerializer(ModelSerializer):
     #         )
 
     # def get_variant_options(self, variant_data, product):
-    #     option_one = self.get_option(variant_data.get("option_one"), product)
-    #     option_two = self.get_option(variant_data.get("option_two"), product)
+    #     option_one = VariationOption.objects.get(name=ovariant_data.get("option_one"), variation__product=product)
+    #     option_two = VariationOption.objects.get(name=ovariant_data.get("option_two"), variation__product=product)
     #     return option_one, option_two
-
-    # def get_option(self, option_name, product):
-    #     if option_name:
-    #         return VariationOption.objects.filter(
-    #             name=option_name,
-    #             variation__product=product,
-    #         ).first()
 
 
 # 상품 정보 수정
