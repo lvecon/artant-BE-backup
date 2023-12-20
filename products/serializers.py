@@ -339,8 +339,12 @@ class ProductCreateSerializer(ModelSerializer):
 
     # 쓰기 전용 필드
     category_name_input = serializers.CharField(write_only=True)
-    primary_color_input = serializers.CharField(write_only=True, required=False)
-    secondary_color_input = serializers.CharField(write_only=True, required=False)
+    primary_color_input = serializers.CharField(
+        write_only=True, required=False, allow_null=True, allow_blank=True
+    )
+    secondary_color_input = serializers.CharField(
+        write_only=True, required=False, allow_null=True, allow_blank=True
+    )
     tags_input = serializers.ListField(
         child=serializers.CharField(), write_only=True, required=False
     )
@@ -352,7 +356,10 @@ class ProductCreateSerializer(ModelSerializer):
     )
     images_input = serializers.ListField(child=serializers.URLField(), write_only=True)
     video_input = serializers.CharField(
-        write_only=True, allow_blank=True, required=False
+        write_only=True,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
     )
     # variations_input = serializers.ListField(
     #     child=serializers.DictField(), write_only=True, required=False
