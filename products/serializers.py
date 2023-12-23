@@ -340,10 +340,10 @@ class ProductCreateSerializer(ModelSerializer):
     # 쓰기 전용 필드
     category_name_input = serializers.CharField(write_only=True)
     primary_color_input = serializers.CharField(
-        write_only=True, required=False, allow_null=True, allow_blank=True
+        write_only=True, allow_null=True, allow_blank=True, required=False
     )
     secondary_color_input = serializers.CharField(
-        write_only=True, required=False, allow_null=True, allow_blank=True
+        write_only=True, allow_null=True, allow_blank=True, required=False
     )
     tags_input = serializers.ListField(
         child=serializers.CharField(), write_only=True, required=False
@@ -361,12 +361,12 @@ class ProductCreateSerializer(ModelSerializer):
         allow_null=True,
         allow_blank=True,
     )
-    # variations_input = serializers.ListField(
-    #     child=serializers.DictField(), write_only=True, required=False
-    # )
-    # variants_input = serializers.ListField(
-    #     child=serializers.DictField(), write_only=True, required=False
-    # )
+    variations_input = serializers.ListField(
+        child=serializers.DictField(), write_only=True, required=False
+    )
+    variants_input = serializers.ListField(
+        child=serializers.DictField(), write_only=True, required=False
+    )
 
     class Meta:
         model = Product
@@ -407,8 +407,8 @@ class ProductCreateSerializer(ModelSerializer):
             "materials_input",
             "images_input",
             "video_input",
-            # "variations_input",
-            # "variants_input",
+            "variations_input",
+            "variants_input",
         ]
 
     def get_primary_color(self, obj):
@@ -447,8 +447,8 @@ class ProductCreateSerializer(ModelSerializer):
         materials_data = validated_data.pop("materials_input", [])
         images_data = validated_data.pop("images_input", [])
         video_url = validated_data.pop("video_input", None)
-        # variations_data = validated_data.pop("variations_input", [])
-        # variants_data = validated_data.pop("variants_input", [])
+        variations_data = validated_data.pop("variations_input", [])
+        variants_data = validated_data.pop("variants_input", [])
 
         with transaction.atomic():  # 트랜잭션 시작. 추가 필드 처리에서 에러 발생 시 상품 생성 방지
             # 상품 객체 생성
@@ -460,8 +460,10 @@ class ProductCreateSerializer(ModelSerializer):
             self.set_section(product, section_title, shop_pk)
             self.set_materials(product, materials_data)
             self.set_tags(product, tags_data)
-            self.process_images(product, images_data)
+            self.create_images(product, images_data)
             self.create_video(product, video_url)
+            self.create_variations(product, variations_data)
+            self.create_variants(product, variants_data)
 
             return product
 
@@ -509,7 +511,7 @@ class ProductCreateSerializer(ModelSerializer):
             tag, _ = ProductTag.objects.get_or_create(name=tag_name)
             product.tags.add(tag)
 
-    def process_images(self, product, images_data):
+    def create_images(self, product, images_data):
         for index, image_url in enumerate(images_data, start=1):
             ProductImage.objects.create(product=product, image=image_url, order=index)
             if index == 1:
@@ -520,41 +522,47 @@ class ProductCreateSerializer(ModelSerializer):
         if video_url:
             ProductVideo.objects.create(product=product, video=video_url)
 
-    # def create_variations(self, product, variations_data):
-    #     for index, variation_data in enumerate(variations_data, start=1):
-    #         variation = Variation.objects.create(
-    #             product=product,
-    #             name=variation_data["name"],
-    #             order=index,
-    #         )
-    #         self.create_variation_options(variation, variation_data.get("options", []))
+    def create_variations(self, product, variations_data):
+        for index, variation_data in enumerate(variations_data, start=1):
+            variation = Variation.objects.create(
+                product=product,
+                name=variation_data["name"],
+                order=index,
+            )
+            self.create_variation_options(variation, variation_data.get("options", []))
 
-    # def create_variation_options(self, variation, options_data):
-    #     for index, option_name in enumerate(options_data, start=1):
-    #         VariationOption.objects.create(
-    #             variation=variation,
-    #             name=option_name,
-    #             order=index,
-    #         )
+    def create_variation_options(self, variation, options_data):
+        for index, option_name in enumerate(options_data, start=1):
+            VariationOption.objects.create(
+                variation=variation,
+                name=option_name,
+                order=index,
+            )
 
-    # def create_variants(self, variants_data, product):
-    #     for index, variant_data in enumerate(variants_data, start=1):
-    #         option_one, option_two = self.get_variant_options(variant_data, product)
-    #         ProductVariant.objects.create(
-    #             product=product,
-    #             option_one=option_one,
-    #             option_two=option_two,
-    #             sku=variant_data.get("sku", ""),
-    #             price=variant_data.get("price", 0),
-    #             quantity=variant_data.get("quantity", 0),
-    #             is_visible=variant_data.get("is_visible", True),
-    #             order=index,
-    #         )
+    def create_variants(self, product, variants_data):
+        print("gd")
+        for index, variant_data in enumerate(variants_data, start=1):
+            option_one, option_two = self.get_variant_options(variant_data, product)
+            ProductVariant.objects.create(
+                product=product,
+                option_one=option_one,
+                option_two=option_two,
+                sku=variant_data.get("sku", None),
+                price=variant_data.get("price"),
+                quantity=variant_data.get("quantity"),
+                is_visible=variant_data.get("is_visible", True),
+                order=index,
+            )
 
-    # def get_variant_options(self, variant_data, product):
-    #     option_one = VariationOption.objects.get(name=ovariant_data.get("option_one"), variation__product=product)
-    #     option_two = VariationOption.objects.get(name=ovariant_data.get("option_two"), variation__product=product)
-    #     return option_one, option_two
+    def get_variant_options(self, variant_data, product):
+        print(variant_data.get("option_one"))
+        option_one = VariationOption.objects.get(
+            name=variant_data.get("option_one"), variation__product=product
+        )
+        option_two = VariationOption.objects.get(
+            name=variant_data.get("option_two"), variation__product=product
+        )
+        return option_one, option_two
 
 
 # 상품 정보 수정
