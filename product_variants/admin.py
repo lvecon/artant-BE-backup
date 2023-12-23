@@ -11,12 +11,18 @@ from .models import (
 
 @admin.register(Variation)
 class VariationAdmin(admin.ModelAdmin):
-    list_display = ("__str__",)
+    list_display = (
+        "id",
+        "__str__",
+    )
 
 
 @admin.register(VariationOption)
 class VariationOptionAdmin(admin.ModelAdmin):
-    list_display = ("__str__",)
+    list_display = (
+        "id",
+        "__str__",
+    )
 
 
 @admin.register(ProductVariant)
