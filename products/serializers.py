@@ -200,32 +200,32 @@ class ProductDetailSerializer(ModelSerializer):
 
         # 옵션 그룹화를 위한 딕셔너리 준비
         grouped_options = {}
+        single_option_values = []
 
         for variant in product.variants.all():
             option1_name = variant.option_one.name if variant.option_one else None
             option2_name = variant.option_two.name if variant.option_two else None
             price = f"{variant.price:,}원" if variant.price else ""
 
-            # 옵션 그룹화
-            if option1_name not in grouped_options:
-                grouped_options[option1_name] = []
-
-            if option2_name:
-                # 옵션2가 있을 경우
+            if len(variations) == 1:
+                # 옵션이 하나일 때
+                single_option_values.append(f"{option1_name} ({price})")
+            elif len(variations) > 1:
+                # 옵션이 두 개일 때
+                if option1_name not in grouped_options:
+                    grouped_options[option1_name] = []
                 grouped_options[option1_name].append(f"{option2_name} ({price})")
-            else:
-                # 옵션2가 없을 경우
-                grouped_options[option1_name] = f"{option1_name} ({price})"
 
         # 결과 포맷팅
-        formatted_option_values = []
-        for key, value in grouped_options.items():
-            if isinstance(value, list):
-                # 옵션이 두 개 이상일 때
-                formatted_option_values.append({"option1": key, "option2": value})
-            else:
-                # 옵션이 하나일 때
-                formatted_option_values.append(value)
+        if single_option_values:
+            # 옵션이 하나일 때
+            formatted_option_values = {"option_one": single_option_values}
+        else:
+            # 옵션이 두 개일 때
+            formatted_option_values = [
+                {"option_one": key, "option_two": value}
+                for key, value in grouped_options.items()
+            ]
 
         formatted_options = {
             "option_names": option_names,
