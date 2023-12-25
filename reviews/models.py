@@ -3,6 +3,7 @@ from common.models import CommonModel
 from django.core.validators import MaxValueValidator
 
 
+# TODO: 구매내역 instance COPY 해서 생성 후, 추후에 purchaseline 모델과 연결하기
 class Review(CommonModel):
     user = models.ForeignKey(
         "users.User",
@@ -14,7 +15,7 @@ class Review(CommonModel):
         on_delete=models.CASCADE,
         related_name="reviews",
     )
-    content = models.CharField(max_length=512)
+    content = models.CharField(max_length=512, blank=True, null=True)
     purchased_options = models.CharField(max_length=255, blank=True, null=True)
     rating = models.PositiveIntegerField(validators=[MaxValueValidator(5)])
     rating_item_quality = models.PositiveIntegerField(

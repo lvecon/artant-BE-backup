@@ -11,7 +11,6 @@ class ReviewImageSerializer(serializers.ModelSerializer):
 
 
 class ReviewResponseSerializer(serializers.ModelSerializer):
-    avatar = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
     class Meta:
@@ -21,8 +20,8 @@ class ReviewResponseSerializer(serializers.ModelSerializer):
             "created_at",
         )
 
-    def get_created_at(self, review):
-        return review.created_at.strftime("%m월%d일,%Y")
+    def get_created_at(self, obj):
+        return obj.created_at.strftime("%m월%d일,%Y")
 
 
 class ReviewSerializer(serializers.ModelSerializer):
