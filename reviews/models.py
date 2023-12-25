@@ -15,6 +15,7 @@ class Review(CommonModel):
         related_name="reviews",
     )
     content = models.CharField(max_length=512)
+    purchased_options = models.CharField(max_length=255, blank=True, null=True)
     rating = models.PositiveIntegerField(validators=[MaxValueValidator(5)])
     rating_item_quality = models.PositiveIntegerField(
         validators=[MaxValueValidator(5)], null=True, blank=True

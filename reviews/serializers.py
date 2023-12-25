@@ -44,7 +44,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     user = TinyUserSerializer(read_only=True)  # read only. valid even no User
     images = ReviewImageSerializer(many=True, read_only=True)
     reply = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    purchased_item = serializers.SerializerMethodField()
     product_thumbnail = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
@@ -53,7 +53,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = (
             "pk",
             "user",
-            "product_name",
+            "purchased_item",
             "content",
             "product_thumbnail",
             "rating",
@@ -65,7 +65,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "reply",
         )
 
-    def get_product_name(self, review):
+    def get_purchased_item(self, review):
         return review.product.name
 
     def get_product_thumbnail(self, review):

@@ -37,7 +37,6 @@ class ReviewDetails(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# TODO: 하단 reviews, image, video 관련 view 리팩토링
 class ProductReviews(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -48,55 +47,46 @@ class ProductReviews(APIView):
             raise NotFound
 
     def get(self, request, pk):
+        # 페이지네이션
         try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
+            page = request.query_params.get("page", 1)
+            page = int(page)
         except ValueError:
             page = 1
-
-        query_type = self.request.GET.get("sort", None)
 
         page_size = settings.REVIEW_PAGE_SIZE
         start = (page - 1) * page_size
         end = start + page_size
+
         product = self.get_object(pk)
         total_reviews = product.reviews.count()
         reviews = product.reviews.all()
 
+        # query parameter for sorting
+        query_type = self.request.GET.get("sort", None)
+
         if query_type == "created_at":
             reviews = reviews.order_by("-created_at")
-            serializer = serializers.ReviewSerializer(
-                reviews[start:end],
-                many=True,
-            )
-
-            response_data = {
-                "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
-                "reviews": serializer.data,
-            }
-            return Response(response_data)
-
-        else:  # suggested
+        else:  # TODO: 추천순 리뷰 정렬 기준 기획
             reviews = reviews.annotate(
                 recommendation_weight=(Length("content"))
                 + F("rating") * 100
                 + Count("images") * 40
             )
-
             # 추천 가중치를 기준으로 정렬
             reviews = reviews.order_by("-recommendation_weight")
 
-            # 최종 정렬 결과를 반환
-            serializer = serializers.ReviewSerializer(
-                reviews[start:end],
-                many=True,
-            )
+        # 최종 정렬 결과를 반환
+        serializer = serializers.ReviewSerializer(
+            reviews[start:end],
+            many=True,
+        )
 
-            response_data = {
-                "total_count": reviews.count(),
-                "reviews": serializer.data,
-            }
-            return Response(response_data)
+        response_data = {
+            "total_count": total_reviews,
+            "reviews": serializer.data,
+        }
+        return Response(response_data)
 
     def post(self, request, pk):
         user = request.user
