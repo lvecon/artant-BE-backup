@@ -341,21 +341,6 @@ class ProductImages(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProductImageDetail(APIView):
-    permission_classes = [IsAuthenticated]  # check user authenticated
-
-    def get_object(self, pk):
-        try:
-            return ProductImage.objects.get(pk=pk)
-        except ProductImage.DoesNotExist:
-            raise NotFound
-
-    def delete(self, request, pk):
-        photo = self.get_object(pk)
-        photo.delete()
-        return Response({"message": "ProductImage deleted"}, status=HTTP_200_OK)
-
-
 class ProductVideos(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
