@@ -11,9 +11,9 @@ urlpatterns = [
     path("<int:pk>/reviews/<int:review_pk>", views.ProductReviewDetail.as_view()),
     path(
         "<int:pk>/reviews/<int:review_pk>/reply",
-        views.ProductReviewReply.as_view(),
+        views.ProductReviewResponse.as_view(),
     ),
-    path("<int:product_pk>/reviews/images", views.ReviewPhotoList.as_view()),
+    path("<int:product_pk>/reviews/images", views.ReviewImageList.as_view()),
     path("<int:pk>/images", views.ProductImages.as_view()),
     path("<int:pk>/videos", views.ProductVideos.as_view()),
     path("images/<int:pk>", views.ProductImageDetail.as_view()),

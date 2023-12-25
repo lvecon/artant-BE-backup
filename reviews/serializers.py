@@ -1,24 +1,23 @@
 from rest_framework import serializers
 from users.serializers import TinyUserSerializer
 from products.serializers import TinyProductSerializer
-from .models import Review, ReviewPhoto, ReviewReply
-from datetime import datetime
+from .models import Review, ReviewImage, ReviewResponse
 
 
-class ReviewPhotoSerializer(serializers.ModelSerializer):
+class ReviewImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ReviewPhoto
+        model = ReviewImage
         fields = ("pk", "image")
 
 
-class ReviewReplySerializer(serializers.ModelSerializer):
+class ReviewResponseSerializer(serializers.ModelSerializer):
     shop_pk = serializers.SerializerMethodField()
     shop_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
     class Meta:
-        model = ReviewReply
+        model = ReviewResponse
         fields = (
             "pk",
             "shop_pk",
@@ -43,7 +42,7 @@ class ReviewReplySerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = TinyUserSerializer(read_only=True)  # read only. valid even no User
-    images = ReviewPhotoSerializer(many=True, read_only=True)
+    images = ReviewImageSerializer(many=True, read_only=True)
     reply = serializers.SerializerMethodField()
     product_name = serializers.SerializerMethodField()
     product_thumbnail = serializers.SerializerMethodField()
@@ -77,7 +76,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def get_reply(self, obj):
         if hasattr(obj, "reply"):  # Check if reply exists
-            return ReviewReplySerializer(obj.reply).data
+            return ReviewResponseSerializer(obj.reply).data
         return None  # No reply, return None or any suitable value
 
 

@@ -20,10 +20,10 @@ from products.models import Product, ProductImage
 from . import serializers
 from reviews.serializers import (
     ReviewSerializer,
-    ReviewPhotoSerializer,
-    ReviewReplySerializer,
+    ReviewImageSerializer,
+    ReviewResponseSerializer,
 )
-from reviews.models import Review, ReviewReply, ReviewPhoto
+from reviews.models import Review, ReviewResponse, ReviewImage
 from user_activities.models import UserProductTimestamp
 
 
@@ -217,7 +217,7 @@ class ProductReviews(APIView):
                 images_data = [
                     {"image": url, "review": review.pk} for url in image_urls
                 ]
-                images_serializer = ReviewPhotoSerializer(data=images_data, many=True)
+                images_serializer = ReviewImageSerializer(data=images_data, many=True)
                 images_serializer.is_valid(raise_exception=True)
                 images = images_serializer.save()
 
@@ -262,19 +262,19 @@ class ProductReviewDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ProductReviewReply(APIView):
+class ProductReviewResponse(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_object(self, review_pk):
         try:
             return Review.objects.get(pk=review_pk).reply
-        except ReviewReply.DoesNotExist:
+        except ReviewResponse.DoesNotExist:
             raise NotFound
 
     def get(self, request, pk, review_pk):
         reply = self.get_object(review_pk)
 
-        serializer = ReviewReplySerializer(
+        serializer = ReviewResponseSerializer(
             reply,
         )
 
@@ -291,7 +291,7 @@ class ProductReviewReply(APIView):
             raise PermissionDenied(
                 "You don't have permission to post a reply for this review."
             )
-        serializer = ReviewReplySerializer(data=request.data)
+        serializer = ReviewResponseSerializer(data=request.data)
         if serializer.is_valid():
             reply = serializer.save(review=review, shop=request.user.shop)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -301,7 +301,7 @@ class ProductReviewReply(APIView):
     def put(self, request, pk, review_pk):
         reply = self.get_object(review_pk)
 
-        serializer = ReviewReplySerializer(reply, data=request.data, partial=True)
+        serializer = ReviewResponseSerializer(reply, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -379,7 +379,7 @@ class ProductVideos(APIView):
             return Response(serializer.errors)
 
 
-class ReviewPhotoList(APIView):
+class ReviewImageList(APIView):
     def get(self, request, product_pk):
         try:
             page = request.query_params.get("page", 1)  # ( ,default value)
@@ -391,8 +391,8 @@ class ReviewPhotoList(APIView):
         start = (page - 1) * page_size
         end = start + page_size
 
-        photos = ReviewPhoto.objects.filter(review__product_id=product_pk)
-        serializer = ReviewPhotoSerializer(
+        photos = ReviewImage.objects.filter(review__product_id=product_pk)
+        serializer = ReviewImageSerializer(
             photos[start:end],
             many=True,
         )
