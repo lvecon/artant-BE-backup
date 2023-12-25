@@ -314,6 +314,71 @@ class ProductReviewResponse(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ProductImages(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_product(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise NotFound("Product not found")
+
+    def post(self, request, pk):
+        product = self.get_product(pk)
+
+        # 상품 소유권 확인
+        if hasattr(request.user, "shop") and request.user.shop != product.shop:
+            raise PermissionDenied(
+                "You do not have permission to add images to this product"
+            )
+
+        # 이미지 추가
+        serializer = serializers.ProductImageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(product=product)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductImageDetail(APIView):
+    permission_classes = [IsAuthenticated]  # check user authenticated
+
+    def get_object(self, pk):
+        try:
+            return ProductImage.objects.get(pk=pk)
+        except ProductImage.DoesNotExist:
+            raise NotFound
+
+    def delete(self, request, pk):
+        photo = self.get_object(pk)
+        photo.delete()
+        return Response({"message": "ProductImage deleted"}, status=HTTP_200_OK)
+
+
+class ProductVideos(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise NotFound
+
+    def post(self, request, pk):
+        product = self.get_object(pk)
+
+        # if request.user != room.owner:
+        #     raise PermissionDenied
+        serializer = serializers.VideoSerializer(data=request.data)
+        if serializer.is_valid():
+            video = serializer.save(product=product)  # connect to room
+            serializer = serializers.VideoSerializer(video)
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+
+
 class ReviewImageList(APIView):
     def get(self, request, product_pk):
         try:
