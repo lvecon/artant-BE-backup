@@ -11,33 +11,18 @@ class ReviewImageSerializer(serializers.ModelSerializer):
 
 
 class ReviewResponseSerializer(serializers.ModelSerializer):
-    shop_pk = serializers.SerializerMethodField()
-    shop_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = ReviewResponse
         fields = (
-            "pk",
-            "shop_pk",
-            "shop_name",
-            "avatar",
             "content",
             "created_at",
         )
 
-    def get_shop_pk(self, reply):
-        return reply.shop.pk
-
-    def get_shop_name(self, reply):
-        return reply.shop.shop_name
-
-    def get_avatar(self, reply):
-        return reply.shop.avatar
-
     def get_created_at(self, review):
-        return review.created_at.strftime("%Y-%m-%d")
+        return review.created_at.strftime("%m월%d일,%Y")
 
 
 class ReviewSerializer(serializers.ModelSerializer):
