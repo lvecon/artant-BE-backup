@@ -41,12 +41,11 @@ class ReviewResponseSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = TinyUserSerializer(read_only=True)  # read only. valid even no User
-    images = ReviewImageSerializer(many=True, read_only=True)
-    reply = serializers.SerializerMethodField()
+    user = TinyUserSerializer(read_only=True)
     purchased_item = serializers.SerializerMethodField()
-    product_thumbnail = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+    response = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
@@ -55,29 +54,35 @@ class ReviewSerializer(serializers.ModelSerializer):
             "user",
             "purchased_item",
             "content",
-            "product_thumbnail",
             "rating",
-            "created_at",
             "rating_item_quality",
             "rating_shipping",
             "rating_customer_service",
+            "created_at",
             "images",
-            "reply",
+            "response",
         )
 
     def get_purchased_item(self, review):
-        return review.product.name
+        product_name = review.product.name
+        # 구매한 옵션 정보 가져오기 (옵션이 있는 경우)
+        options = f"  {review.purchased_options}" if review.purchased_options else ""
 
-    def get_product_thumbnail(self, review):
-        return review.product.thumbnail
+        return f"{product_name}{options}"
 
     def get_created_at(self, review):
-        return review.created_at.strftime("%Y-%m-%d")
+        return review.created_at.strftime("%m월%d일,%Y")
 
-    def get_reply(self, obj):
-        if hasattr(obj, "reply"):  # Check if reply exists
-            return ReviewResponseSerializer(obj.reply).data
-        return None  # No reply, return None or any suitable value
+    def get_images(self, review):
+        images = review.images.all()
+        image_urls = [image.image for image in images]
+
+        return image_urls
+
+    def get_response(self, review):
+        if hasattr(review, "reply"):  # Check if reply exists
+            return ReviewResponseSerializer(review.reply).data
+        return None
 
 
 class ReviewDetailSerializer(serializers.ModelSerializer):
