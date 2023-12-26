@@ -25,6 +25,11 @@ class PurchaseLine(CommonModel):
         related_name="purchase_lines",
         on_delete=models.CASCADE,
     )
+
+    # 기본 정보. TODO: 정책 기획 완료 시, 추가로 저장할 데이터 추가
+    product_name = models.CharField(max_length=140)
+    product_thumbnail = models.URLField()
+    product_price = models.PositiveIntegerField()
     purchased_options = models.CharField(max_length=255, blank=True, null=True)
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
 
