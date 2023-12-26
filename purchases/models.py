@@ -7,8 +7,6 @@ from common.models import CommonModel
 class Purchase(CommonModel):
     user = models.OneToOneField(
         "users.User",
-        blank=True,
-        null=True,
         on_delete=models.CASCADE,
     )
 
@@ -19,12 +17,12 @@ class Purchase(CommonModel):
 class PurchaseLine(CommonModel):
     purchase = models.ForeignKey(
         Purchase,
-        related_name="purchaseline",
+        related_name="purchase_lines",
         on_delete=models.CASCADE,
     )
     product = models.ForeignKey(
         "products.Product",
-        related_name="purchaseline",
+        related_name="purchase_lines",
         on_delete=models.CASCADE,
     )
     purchased_options = models.CharField(max_length=255, blank=True, null=True)
