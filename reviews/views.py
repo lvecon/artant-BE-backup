@@ -127,16 +127,15 @@ class ProductReviewDetail(APIView):
         except Product.DoesNotExist:
             raise NotFound
 
-    def get(self, request, pk, review_pk):
+    def get(self, request, review_pk):
         review = self.get_object(review_pk)
-
         serializer = serializers.ReviewSerializer(
             review,
         )
-
         return Response(serializer.data)
 
-    def put(self, request, pk, review_pk):
+    # TODO: 리뷰 수정 보완하기. 이미지, 수정 쓰기 필드 등
+    def put(self, request, review_pk):
         review = self.get_object(review_pk)
         serializer = serializers.ReviewSerializer(
             review, data=request.data, partial=True
@@ -147,8 +146,11 @@ class ProductReviewDetail(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk, review_pk):
+    def delete(self, request, review_pk):
         review = self.get_object(review_pk)
+        # 요청한 사용자가 리뷰 작성자와 일치하는지 확인
+        if review.user != request.user:
+            raise PermissionDenied("You do not have permission to delete this review.")
         review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -168,7 +170,6 @@ class ProductReviewResponse(APIView):
         serializer = serializers.ReviewResponseSerializer(
             reply,
         )
-
         return Response(serializer.data)
 
     def post(self, request, pk, review_pk):
@@ -208,7 +209,7 @@ class ProductReviewResponse(APIView):
 
 
 class ReviewImageList(APIView):
-    def get(self, request, product_pk):
+    def get(self, request, pk):
         try:
             page = request.query_params.get("page", 1)  # ( ,default value)
             page = int(page)  # Type change
@@ -219,12 +220,11 @@ class ReviewImageList(APIView):
         start = (page - 1) * page_size
         end = start + page_size
 
-        photos = ReviewImage.objects.filter(review__product_id=product_pk)
+        photos = ReviewImage.objects.filter(review__product_id=pk)
         serializer = serializers.ReviewImageSerializer(
             photos[start:end],
             many=True,
         )
-
         return Response(serializer.data)
 
 

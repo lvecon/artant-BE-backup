@@ -7,7 +7,7 @@ from .models import Review, ReviewImage, ReviewResponse
 class ReviewImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewImage
-        fields = ("pk", "image")
+        fields = ("image",)
 
 
 class ReviewResponseSerializer(serializers.ModelSerializer):
@@ -34,7 +34,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = (
-            "pk",
             "user",
             "purchased_item",
             "content",
