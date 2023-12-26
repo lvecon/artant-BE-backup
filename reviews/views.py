@@ -15,28 +15,6 @@ from products.models import Product
 from shops.models import Shop
 
 
-class ReviewDetails(APIView):
-    def get_object(self, pk):
-        try:
-            return Review.objects.get(pk=pk)
-        except Review.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk):
-        review = self.get_object(pk)
-
-        serializer = ReviewDetailSerializer(
-            review,
-            context={"request": request},
-        )
-        return Response(serializer.data)
-
-    def delete(self, request, pk, review_pk):
-        review = self.get_object(review_pk)
-        review.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class ProductReviews(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
