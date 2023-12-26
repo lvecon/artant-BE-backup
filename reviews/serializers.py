@@ -48,11 +48,15 @@ class ReviewSerializer(serializers.ModelSerializer):
         )
 
     def get_purchased_item(self, review):
-        product_name = review.product.name
+        product_name = review.purchase.product_name
         # 구매한 옵션 정보 가져오기 (옵션이 있는 경우)
-        options = f"  {review.purchased_options}" if review.purchased_options else ""
+        options = (
+            f"{review.purchase.purchased_options}"
+            if review.purchase.purchased_options
+            else ""
+        )
 
-        return f"{product_name}{options}"
+        return f"{product_name}({options})"
 
     def get_created_at(self, review):
         return review.created_at.strftime("%m월%d일,%Y")

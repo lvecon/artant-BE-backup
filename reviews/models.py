@@ -15,8 +15,12 @@ class Review(CommonModel):
         on_delete=models.CASCADE,
         related_name="reviews",
     )
+    purchase = models.ForeignKey(
+        "purchases.PurchaseLine",
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
     content = models.CharField(max_length=512, blank=True, null=True)
-    purchased_options = models.CharField(max_length=255, blank=True, null=True)
     rating = models.PositiveIntegerField(validators=[MaxValueValidator(5)])
     rating_item_quality = models.PositiveIntegerField(
         validators=[MaxValueValidator(5)], null=True, blank=True
