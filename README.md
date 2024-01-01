@@ -1,3 +1,54 @@
+# Commit Message Convention
+
+To maintain a consistent history and effective communication across the project, we follow the commit message conventions outlined below.
+
+## Commit Message Structure
+
+A commit message should have the following format:
+```
+<type>: <subject>
+
+<body>
+<footer>
+```
+
+**Subject**
+- The subject should **not exceed 50 characters**.
+- **Start with a capital letter** and do not end with a period.
+- **Use the imperative mood**.
+
+**Body**
+- **Optional**, providing a detailed explanation of the commit.
+- **Wrap the line at 72 characters**.
+- **Use an explanatory sentence**.
+
+**Footer**
+- **Optional**, used for referencing issue tracker IDs.
+  
+**Type**
+The type of the commit should be one of the following:
+```
+feat: A new feature
+fix: A bug fix
+docs: Documentation changes
+style: Code style changes (no logical change)
+refactor: Refactoring code (neither new feature nor bug fix)
+perf: Performance improvement
+test: Adding or updating tests (no business logic change)
+chore: Changes to the build process, package manager configs, etc. (no business logic change)
+```
+
+**Example**
+```
+feat: Add user profile picture feature
+
+Implemented a feature that allows users to add a profile picture. 
+Users can now upload a photo in their profile settings.
+
+Closes #123
+```
+
+
 # Install Dependencies
 
 First, the project requires python version above 3.11. If not, install pyenv:
