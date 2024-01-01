@@ -10,7 +10,6 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from reviews.models import Review, ReviewImage, ReviewResponse
 from . import serializers
-from reviews.serializers import ReviewDetailSerializer
 from products.models import Product
 from shops.models import Shop
 
