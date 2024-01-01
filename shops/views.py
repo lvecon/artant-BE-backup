@@ -291,33 +291,47 @@ class ShopProductUpdate(APIView):
 
 
 # 상품 생성 Or 편집 화면에서 section 생성 TODO: ShopDetail 의 PATCH에서 해결 가능. 삭제 고려
-class Sections(APIView):
+class ShopSections(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, shop_pk):
-        user = request.user
-        # 사용자가 해당 상점의 소유자인지 확인
-        if not user.shop.pk == shop_pk:
-            return Response(
-                {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
-            )
+    def get(self, request, shop_pk):
+        # 상점 존재 여부 확인
+        try:
+            shop = Shop.objects.get(pk=shop_pk)
+        except Shop.DoesNotExist:
+            raise NotFound("Shop not found")
 
-        serializer = serializers.SectionSerializer(data=request.data)
-        if serializer.is_valid():
-            # 동일한 제목의 섹션이 이미 있는지 확인
-            if Section.objects.filter(
-                shop_id=shop_pk, title=serializer.validated_data["title"]
-            ).exists():
-                return Response(
-                    {"error": "A section with this title already exists."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        serializer = serializers.ShopSectionSerializer(
+            shop, context={"request": request}
+        )
 
-            # 새 섹션 생성
-            section = serializer.save(shop_id=shop_pk)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data)
+
+    # TODO: 상점 PATCH API로 해결됨. 삭제 고려
+    # def post(self, request, shop_pk):
+    #     user = request.user
+    #     # 사용자가 해당 상점의 소유자인지 확인
+    #     if not user.shop.pk == shop_pk:
+    #         return Response(
+    #             {"error": "You do not own this shop."}, status=status.HTTP_403_FORBIDDEN
+    #         )
+
+    #     serializer = serializers.SectionSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         # 동일한 제목의 섹션이 이미 있는지 확인
+    #         if Section.objects.filter(
+    #             shop_id=shop_pk, title=serializer.validated_data["title"]
+    #         ).exists():
+    #             return Response(
+    #                 {"error": "A section with this title already exists."},
+    #                 status=status.HTTP_400_BAD_REQUEST,
+    #             )
+
+    #         # 새 섹션 생성
+    #         section = serializer.save(shop_id=shop_pk)
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # TODO: Reviews App 으로 리팩토링

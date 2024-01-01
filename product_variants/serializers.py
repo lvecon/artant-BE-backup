@@ -16,9 +16,6 @@ class VariationSerializer(serializers.ModelSerializer):
         model = Variation
         fields = (
             "name",
-            "is_sku_vary",
-            "is_price_vary",
-            "is_quantity_vary",
             "options",
         )
 

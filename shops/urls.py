@@ -22,7 +22,7 @@ urlpatterns = [
         views.ShopProductUpdate.as_view(),
         name="product_update",
     ),
-    path("<int:shop_pk>/sections", views.Sections.as_view(), name="shop_sections"),
+    path("<int:shop_pk>/sections", views.ShopSections.as_view(), name="shop_sections"),
     # TODO: Reviews app으로 이동
     path("<int:pk>/reviews", views.ShopReviews.as_view(), name="shop_reviews"),
     path(

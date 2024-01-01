@@ -2,13 +2,10 @@ from django.db import models
 
 
 class Variation(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=32)
     product = models.ForeignKey(
         "products.Product", on_delete=models.CASCADE, related_name="variations"
     )
-    is_sku_vary = models.BooleanField(default=False)
-    is_price_vary = models.BooleanField(default=False)
-    is_quantity_vary = models.BooleanField(default=False)
     order = models.PositiveIntegerField()
 
     def __str__(self):
@@ -16,12 +13,12 @@ class Variation(models.Model):
 
 
 class VariationOption(models.Model):
-    name = models.CharField(max_length=255, null=True)
+    name = models.CharField(max_length=32)
     variation = models.ForeignKey(
-        Variation, on_delete=models.CASCADE, null=True, related_name="options"
+        Variation, on_delete=models.CASCADE, related_name="options"
     )
     order = models.PositiveIntegerField()
-    
+
     def __str__(self):
         return f"{self.variation.name} - {self.name} : {self.variation.product.name}"
 

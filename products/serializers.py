@@ -80,7 +80,6 @@ class ProductDetailSerializer(ModelSerializer):
     materials = serializers.SerializerMethodField()
 
     options = serializers.SerializerMethodField()
-    separate_options = serializers.SerializerMethodField()
 
     rating = serializers.SerializerMethodField()
     rating_count = serializers.SerializerMethodField()
@@ -130,7 +129,6 @@ class ProductDetailSerializer(ModelSerializer):
             "materials",
             "description",
             "options",
-            "separate_options",
         )
 
     def get_rating(self, product):
@@ -196,32 +194,45 @@ class ProductDetailSerializer(ModelSerializer):
         return [material.name for material in obj.materials.all()]
 
     def get_options(self, product):
-        options_list = []
+        # 각 Variation과 해당 옵션을 정렬하여 추출
+        variations = product.variations.all().order_by("order")
+        option_names = [variation.name for variation in variations]
+
+        # 옵션 그룹화를 위한 딕셔너리 준비
+        grouped_options = {}
+        single_option_values = []
+
         for variant in product.variants.all():
-            option_labels = []
-            if variant.option_one:
-                option_labels.append(variant.option_one.name)
-            if variant.option_two:
-                option_labels.append(variant.option_two.name)
-
+            option1_name = variant.option_one.name if variant.option_one else None
+            option2_name = variant.option_two.name if variant.option_two else None
             price = f"{variant.price:,}원" if variant.price else ""
-            option_str = "x".join(option_labels) + (f" ({price})" if price else "")
-            options_list.append(option_str)
 
-        return options_list
+            if len(variations) == 1:
+                # 옵션이 하나일 때
+                single_option_values.append(f"{option1_name} ({price})")
+            elif len(variations) > 1:
+                # 옵션이 두 개일 때
+                if option1_name not in grouped_options:
+                    grouped_options[option1_name] = []
+                grouped_options[option1_name].append(f"{option2_name} ({price})")
 
-    def get_separate_options(self, product):
-        separate_options_dict = {}
-        for variation in product.variations.all():
-            # 여기서 'options'는 Variation 모델의 related_name으로 설정된 필드명을 사용해야 합니다.
-            # 이 예에서는 Variation 모델에 related_name='options'로 설정되어 있다고 가정합니다.
-            options = variation.options.all()
-            option_names = [option.name for option in options if option.name]
-            if option_names:
-                separate_options_dict[variation.name] = option_names
+        # 결과 포맷팅
+        if single_option_values:
+            # 옵션이 하나일 때
+            formatted_option_values = {"option_one": single_option_values}
+        else:
+            # 옵션이 두 개일 때
+            formatted_option_values = [
+                {"option_one": key, "option_two": value}
+                for key, value in grouped_options.items()
+            ]
 
-        # 각각의 옵션 카테고리별로 집합을 리스트 형태로 변환
-        return [{key: value} for key, value in separate_options_dict.items()]
+        formatted_options = {
+            "option_names": option_names,
+            "option_values": formatted_option_values,
+        }
+
+        return formatted_options
 
     def get_rating(self, product):
         count = product.reviews.count()
@@ -339,8 +350,12 @@ class ProductCreateSerializer(ModelSerializer):
 
     # 쓰기 전용 필드
     category_name_input = serializers.CharField(write_only=True)
-    primary_color_input = serializers.CharField(write_only=True, required=False)
-    secondary_color_input = serializers.CharField(write_only=True, required=False)
+    primary_color_input = serializers.CharField(
+        write_only=True, allow_null=True, allow_blank=True, required=False
+    )
+    secondary_color_input = serializers.CharField(
+        write_only=True, allow_null=True, allow_blank=True, required=False
+    )
     tags_input = serializers.ListField(
         child=serializers.CharField(), write_only=True, required=False
     )
@@ -352,14 +367,17 @@ class ProductCreateSerializer(ModelSerializer):
     )
     images_input = serializers.ListField(child=serializers.URLField(), write_only=True)
     video_input = serializers.CharField(
-        write_only=True, allow_blank=True, required=False
+        write_only=True,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
     )
-    # variations_input = serializers.ListField(
-    #     child=serializers.DictField(), write_only=True, required=False
-    # )
-    # variants_input = serializers.ListField(
-    #     child=serializers.DictField(), write_only=True, required=False
-    # )
+    variations_input = serializers.ListField(
+        child=serializers.DictField(), write_only=True, required=False
+    )
+    variants_input = serializers.ListField(
+        child=serializers.DictField(), write_only=True, required=False
+    )
 
     class Meta:
         model = Product
@@ -400,8 +418,8 @@ class ProductCreateSerializer(ModelSerializer):
             "materials_input",
             "images_input",
             "video_input",
-            # "variations_input",
-            # "variants_input",
+            "variations_input",
+            "variants_input",
         ]
 
     def get_primary_color(self, obj):
@@ -440,8 +458,8 @@ class ProductCreateSerializer(ModelSerializer):
         materials_data = validated_data.pop("materials_input", [])
         images_data = validated_data.pop("images_input", [])
         video_url = validated_data.pop("video_input", None)
-        # variations_data = validated_data.pop("variations_input", [])
-        # variants_data = validated_data.pop("variants_input", [])
+        variations_data = validated_data.pop("variations_input", [])
+        variants_data = validated_data.pop("variants_input", [])
 
         with transaction.atomic():  # 트랜잭션 시작. 추가 필드 처리에서 에러 발생 시 상품 생성 방지
             # 상품 객체 생성
@@ -453,8 +471,10 @@ class ProductCreateSerializer(ModelSerializer):
             self.set_section(product, section_title, shop_pk)
             self.set_materials(product, materials_data)
             self.set_tags(product, tags_data)
-            self.process_images(product, images_data)
+            self.create_images(product, images_data)
             self.create_video(product, video_url)
+            self.create_variations(product, variations_data)
+            self.create_variants(product, variants_data)
 
             return product
 
@@ -490,7 +510,6 @@ class ProductCreateSerializer(ModelSerializer):
                 section.save()
             product.section = section
             product.save()
-            product.save()
 
     def set_materials(self, product, materials_data):
         for material_name in materials_data:
@@ -502,7 +521,7 @@ class ProductCreateSerializer(ModelSerializer):
             tag, _ = ProductTag.objects.get_or_create(name=tag_name)
             product.tags.add(tag)
 
-    def process_images(self, product, images_data):
+    def create_images(self, product, images_data):
         for index, image_url in enumerate(images_data, start=1):
             ProductImage.objects.create(product=product, image=image_url, order=index)
             if index == 1:
@@ -513,58 +532,59 @@ class ProductCreateSerializer(ModelSerializer):
         if video_url:
             ProductVideo.objects.create(product=product, video=video_url)
 
-    # def create_variations(self, product, variations_data):
-    #     for index, variation_data in enumerate(variations_data, start=1):
-    #         variation = Variation.objects.create(
-    #             product=product,
-    #             name=variation_data["name"],
-    #             is_sku_vary=variation_data["is_sku_vary"],
-    #             is_price_vary=variation_data.get("is_price_vary", False),
-    #             is_quantity_vary=variation_data.get("is_quantity_vary", False),
-    #             order=index,
-    #         )
-    #         self.create_variation_options(variation, variation_data.get("options", []))
+    def create_variations(self, product, variations_data):
+        for index, variation_data in enumerate(variations_data, start=1):
+            variation = Variation.objects.create(
+                product=product,
+                name=variation_data["name"],
+                order=index,
+            )
+            self.create_variation_options(variation, variation_data.get("options", []))
 
-    # def create_variation_options(self, variation, options_data):
-    #     for index, option_data in enumerate(options_data, start=1):
-    #         VariationOption.objects.create(
-    #             variation=variation,
-    #             name=option_data["name"],
-    #             order=index,
-    #         )
+    def create_variation_options(self, variation, options_data):
+        for index, option_name in enumerate(options_data, start=1):
+            VariationOption.objects.create(
+                variation=variation,
+                name=option_name,
+                order=index,
+            )
 
-    # def create_variants(self, variants_data, product):
-    #     for index, variant_data in enumerate(variants_data, start=1):
-    #         option_one, option_two = self.get_variant_options(variant_data, product)
-    #         ProductVariant.objects.create(
-    #             product=product,
-    #             option_one=option_one,
-    #             option_two=option_two,
-    #             sku=variant_data.get("sku", ""),
-    #             price=variant_data.get("price", 0),
-    #             quantity=variant_data.get("quantity", 0),
-    #             is_visible=variant_data.get("is_visible", True),
-    #             order=index,
-    #         )
+    def create_variants(self, product, variants_data):
+        for index, variant_data in enumerate(variants_data, start=1):
+            option_one, option_two = self.get_variant_options(variant_data, product)
+            ProductVariant.objects.create(
+                product=product,
+                option_one=option_one,
+                option_two=option_two,
+                sku=variant_data.get("sku", None),
+                price=variant_data.get("price"),
+                quantity=variant_data.get("quantity"),
+                is_visible=variant_data.get("is_visible", True),
+                order=index,
+            )
 
-    # def get_variant_options(self, variant_data, product):
-    #     option_one = self.get_option(variant_data.get("option_one"), product)
-    #     option_two = self.get_option(variant_data.get("option_two"), product)
-    #     return option_one, option_two
+    def get_variant_options(self, variant_data, product):
+        option_one_name = variant_data.get("option_one")
+        option_two_name = variant_data.get("option_two")
 
-    # def get_option(self, option_name, product):
-    #     if option_name:
-    #         return VariationOption.objects.filter(
-    #             name=option_name,
-    #             variation__product=product,
-    #         ).first()
+        option_one = None
+        option_two = None
+
+        if option_one_name:
+            option_one = VariationOption.objects.get(
+                name=option_one_name, variation__product=product
+            )
+        if option_two_name:
+            option_two = VariationOption.objects.get(
+                name=option_two_name, variation__product=product
+            )
+
+        return option_one, option_two
 
 
 # 상품 정보 수정
 class ProductUpdateSerializer(ModelSerializer):
     # SerializerMethodField를 사용하여 읽기 전용 필드를 정의
-    # variations = serializers.SerializerMethodField()
-    # variants = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()
     subCategory = serializers.SerializerMethodField()
     primary_color = serializers.SerializerMethodField()
@@ -573,6 +593,8 @@ class ProductUpdateSerializer(ModelSerializer):
     materials = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     video = serializers.SerializerMethodField()
+    variations = VariationSerializer(many=True, read_only=True)
+    variants = ProductVariantSerializer(many=True, read_only=True)
 
     # 쓰기 전용 필드
     category_name_input = serializers.CharField(write_only=True, required=False)
@@ -590,6 +612,12 @@ class ProductUpdateSerializer(ModelSerializer):
     )
     video_input = serializers.CharField(
         write_only=True, required=False, allow_blank=True
+    )
+    variations_input = serializers.ListField(
+        child=serializers.JSONField(), write_only=True, required=False
+    )
+    variants_input = serializers.ListField(
+        child=serializers.JSONField(), write_only=True, required=False
     )
 
     class Meta:
@@ -630,6 +658,8 @@ class ProductUpdateSerializer(ModelSerializer):
             "materials_input",
             "images_input",
             "video_input",
+            "variations_input",
+            "variants_input",
         )
 
     def update(self, instance, validated_data):
@@ -658,6 +688,7 @@ class ProductUpdateSerializer(ModelSerializer):
         self.handle_materials(instance, validated_data.pop("materials_input", []))
         self.handle_images(instance, validated_data.pop("images_input", []))
         self.handle_video(instance, validated_data.pop("video_input", None))
+        self.handle_options(instance, validated_data)
 
     def handle_category(self, instance, category_name):
         if category_name:
@@ -738,6 +769,136 @@ class ProductUpdateSerializer(ModelSerializer):
                 ProductVideo.objects.create(product=instance, video=video_url)
         elif hasattr(instance, "video"):
             instance.video.delete()
+
+    def handle_options(self, product, validated_data):
+        # Variations 및 Variants 처리
+        self.handle_variations(product, validated_data.pop("variations_input", []))
+        self.handle_variants(product, validated_data.pop("variants_input", []))
+
+    def handle_variations(self, product, variations_data):
+        existing_variation_names = set(
+            product.variations.values_list("name", flat=True)
+        )
+        new_variation_names = set(
+            variation_data.get("name") for variation_data in variations_data
+        )
+
+        # 새로운 Variation 추가 및 기존 Variation 업데이트
+        for index, variation_data in enumerate(variations_data, start=1):
+            name = variation_data.get("name")
+            options = variation_data.get("options", [])
+
+            if name in existing_variation_names:
+                # 기존 Variation 업데이트
+                variation = product.variations.get(name=name)
+                variation.order = index
+                variation.save()
+                self.update_variation_options(variation, options)
+            else:
+                # 새로운 Variation 추가
+                new_variation = Variation.objects.create(
+                    product=product, name=name, order=index
+                )
+                self.create_variation_options(new_variation, options)
+
+        # 새로운 데이터에 없는 기존 Variation 삭제
+        for variation in product.variations.all():
+            if variation.name not in new_variation_names:
+                variation.delete()
+
+    def update_variation_options(self, variation, options):
+        existing_option_names = set(variation.options.values_list("name", flat=True))
+
+        for index, option_name in enumerate(options, start=1):
+            if option_name in existing_option_names:
+                # 기존 Option 업데이트
+                option = variation.options.get(name=option_name)
+                option.order = index
+                option.save()
+            else:
+                # 새로운 Option 추가
+                VariationOption.objects.create(
+                    variation=variation, name=option_name, order=index
+                )
+
+        # 새로운 데이터에 없는 기존 Option 삭제
+        for option in variation.options.all():
+            if option.name not in options:
+                option.delete()
+
+    def create_variation_options(self, variation, options):
+        for index, option_name in enumerate(options, start=1):
+            VariationOption.objects.create(
+                variation=variation, name=option_name, order=index
+            )
+
+    def handle_variants(self, product, variants_data):
+        # 기존 Variant들의 고유 식별자 목록을 생성 (예: 옵션 이름의 조합)
+        existing_variants_keys = set()
+        for variant in product.variants.all():
+            key = (
+                variant.option_one.name if variant.option_one else None,
+                variant.option_two.name if variant.option_two else None,
+            )
+            existing_variants_keys.add(key)
+
+        new_variants_keys = set()
+
+        for index, variant_data in enumerate(variants_data, start=1):
+            option_one_name = variant_data.get("option_one")
+            option_two_name = variant_data.get("option_two")
+            sku = variant_data.get("sku")
+            price = variant_data.get("price")
+            quantity = variant_data.get("quantity")
+            is_visible = variant_data.get("is_visible", True)
+
+            option_one = None
+            option_two = None
+
+            if option_one_name:
+                option_one = VariationOption.objects.get(
+                    name=option_one_name, variation__product=product
+                )
+            if option_two_name:
+                option_two = VariationOption.objects.get(
+                    name=option_two_name, variation__product=product
+                )
+
+            variant_key = (option_one_name, option_two_name)
+            new_variants_keys.add(variant_key)
+
+            if variant_key in existing_variants_keys:
+                # 기존 Variant 업데이트
+                variant = product.variants.get(
+                    option_one=option_one, option_two=option_two
+                )
+                variant.order = index
+                variant.sku = sku
+                variant.price = price
+                variant.quantity = quantity
+                variant.is_visible = is_visible
+                variant.save()
+            else:
+                # 새로운 Variant 추가
+                ProductVariant.objects.create(
+                    product=product,
+                    option_one=option_one,
+                    option_two=option_two,
+                    sku=sku,
+                    price=price,
+                    quantity=quantity,
+                    is_visible=is_visible,
+                    order=index,
+                )
+
+        # 새로운 데이터에 없는 기존 Variant 삭제
+        for variant in product.variants.all():
+            variant_key = (
+                variant.option_one.name if variant.option_one else None,
+                variant.option_two.name if variant.option_two else None,
+            )
+            if variant_key not in new_variants_keys:
+                variant.delete()
 
     def get_category(self, product):
         return product.category.get(level=2).name
