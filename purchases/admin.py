@@ -5,7 +5,7 @@ from purchases.models import Purchase, PurchaseLine
 
 @admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
-    list_display = ("user", "__iter__")
+    list_display = ("__str__",)
 
 
 @admin.register(PurchaseLine)

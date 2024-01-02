@@ -7,41 +7,31 @@ from common.models import CommonModel
 class Purchase(CommonModel):
     user = models.OneToOneField(
         "users.User",
-        blank=True,
-        null=True,
         on_delete=models.CASCADE,
     )
 
     def __str__(self):
         return f"{self.user}'s purchase"
 
-    def __iter__(self):
-        return [str(purchase_line) for purchase_line in self.purchaseline.all()]
-
 
 class PurchaseLine(CommonModel):
     purchase = models.ForeignKey(
         Purchase,
-        related_name="purchaseline",
+        related_name="purchase_lines",
         on_delete=models.CASCADE,
     )
-
     product = models.ForeignKey(
         "products.Product",
-        related_name="purchaseline",
+        related_name="purchase_lines",
         on_delete=models.CASCADE,
     )
 
-    # variant = models.ManyToManyField(
-    #     "products.VariantValue",
-    #     related_name="+",
-    #     blank=True,
-    # )
+    # 기본 정보. TODO: 정책 기획 완료 시, 추가로 저장할 데이터 추가. 주문번호(CTO)
+    product_name = models.CharField(max_length=140)
+    product_thumbnail = models.URLField()
+    purchased_price = models.PositiveIntegerField()
+    purchased_option = models.CharField(max_length=255, blank=True, null=True)
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
 
-    order_date = models.CharField(
-        null=True, blank=True, max_length=20
-    )  # 주문한 날짜를 문자열로 저장
-
     def __str__(self):
-        return f"{self.product.name} in {self.purchase.user.name}"
+        return f"{self.product.name} in {self.purchase}"

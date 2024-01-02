@@ -1,16 +1,26 @@
 from django.db import models
-
 from common.models import CommonModel
 from django.core.validators import MaxValueValidator
 
 
+# TODO: 구매내역 instance COPY 해서 생성 후, 추후에 purchaseline 모델과 연결하기
 class Review(CommonModel):
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,
         related_name="reviews",
     )
-    content = models.TextField()
+    product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
+    purchase = models.ForeignKey(
+        "purchases.PurchaseLine",
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    content = models.CharField(max_length=512, blank=True, null=True)
     rating = models.PositiveIntegerField(validators=[MaxValueValidator(5)])
     rating_item_quality = models.PositiveIntegerField(
         validators=[MaxValueValidator(5)], null=True, blank=True
@@ -21,17 +31,12 @@ class Review(CommonModel):
     rating_customer_service = models.PositiveIntegerField(
         validators=[MaxValueValidator(5)], null=True, blank=True
     )
-    product = models.ForeignKey(
-        "products.Product",
-        on_delete=models.CASCADE,
-        related_name="reviews",
-    )
 
     def __str__(self):
         return f"{self.user} / {self.product}/ {self.content}"
 
 
-class ReviewPhoto(CommonModel):
+class ReviewImage(CommonModel):
     image = models.URLField()
     review = models.ForeignKey(
         "Review",
@@ -45,7 +50,7 @@ class ReviewPhoto(CommonModel):
         return f"{self.review} "
 
 
-class ReviewReply(CommonModel):
+class ReviewResponse(CommonModel):
     review = models.OneToOneField(
         "Review",
         on_delete=models.CASCADE,
@@ -55,9 +60,9 @@ class ReviewReply(CommonModel):
         "shops.Shop",
         on_delete=models.CASCADE,
         null=True,
-        related_name="reply",
+        related_name="replies",
     )
-    content = models.TextField()
+    content = models.CharField(max_length=512)
 
     def __str__(self):
         return f"{self.review} / {self.content}"

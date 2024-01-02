@@ -1,84 +1,75 @@
 from rest_framework import serializers
 from users.serializers import TinyUserSerializer
 from products.serializers import TinyProductSerializer
-from .models import Review, ReviewPhoto, ReviewReply
-from datetime import datetime
+from .models import Review, ReviewImage, ReviewResponse
 
 
-class ReviewPhotoSerializer(serializers.ModelSerializer):
+class ReviewImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ReviewPhoto
-        fields = ("pk", "image")
+        model = ReviewImage
+        fields = ("image",)
 
 
-class ReviewReplySerializer(serializers.ModelSerializer):
-    shop_pk = serializers.SerializerMethodField()
-    shop_name = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+class ReviewResponseSerializer(serializers.ModelSerializer):
     created_at = serializers.SerializerMethodField()
 
     class Meta:
-        model = ReviewReply
+        model = ReviewResponse
         fields = (
-            "pk",
-            "shop_pk",
-            "shop_name",
-            "avatar",
             "content",
             "created_at",
         )
 
-    def get_shop_pk(self, reply):
-        return reply.shop.pk
-
-    def get_shop_name(self, reply):
-        return reply.shop.shop_name
-
-    def get_avatar(self, reply):
-        return reply.shop.avatar
-
-    def get_created_at(self, review):
-        return review.created_at.strftime("%Y-%m-%d")
+    def get_created_at(self, obj):
+        return obj.created_at.strftime("%m월%d일,%Y")
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = TinyUserSerializer(read_only=True)  # read only. valid even no User
-    images = ReviewPhotoSerializer(many=True, read_only=True)
-    reply = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
-    product_thumbnail = serializers.SerializerMethodField()
+    user = TinyUserSerializer(read_only=True)
+    purchased_item = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+    response = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
         fields = (
-            "pk",
             "user",
-            "product_name",
+            "purchased_item",
             "content",
-            "product_thumbnail",
             "rating",
-            "created_at",
             "rating_item_quality",
             "rating_shipping",
             "rating_customer_service",
+            "created_at",
             "images",
-            "reply",
+            "response",
         )
 
-    def get_product_name(self, review):
-        return review.product.name
+    def get_purchased_item(self, review):
+        product_name = review.purchase.product_name
+        # 구매한 옵션 정보 가져오기 (옵션이 있는 경우)
+        options = (
+            f"{review.purchase.purchased_options}"
+            if review.purchase.purchased_options
+            else ""
+        )
 
-    def get_product_thumbnail(self, review):
-        return review.product.thumbnail
+        return f"{product_name}({options})"
 
     def get_created_at(self, review):
-        return review.created_at.strftime("%Y-%m-%d")
+        return review.created_at.strftime("%m월%d일,%Y")
 
-    def get_reply(self, obj):
-        if hasattr(obj, "reply"):  # Check if reply exists
-            return ReviewReplySerializer(obj.reply).data
-        return None  # No reply, return None or any suitable value
+    def get_images(self, review):
+        images = review.images.all()
+        image_urls = [image.image for image in images]
+
+        return image_urls
+
+    def get_response(self, review):
+        if hasattr(review, "reply"):  # Check if reply exists
+            return ReviewResponseSerializer(review.reply).data
+        return None
 
 
 class ReviewDetailSerializer(serializers.ModelSerializer):

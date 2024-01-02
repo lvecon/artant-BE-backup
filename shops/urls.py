@@ -23,11 +23,4 @@ urlpatterns = [
         name="product_update",
     ),
     path("<int:shop_pk>/sections", views.ShopSections.as_view(), name="shop_sections"),
-    # TODO: Reviews app으로 이동
-    path("<int:pk>/reviews", views.ShopReviews.as_view(), name="shop_reviews"),
-    path(
-        "<int:pk>/reviews/images/<int:product_pk>",
-        views.ReviewPhotos.as_view(),
-        name="review_photos",
-    ),
 ]

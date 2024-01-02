@@ -1,7 +1,7 @@
 # 표준 라이브러리
 from django.utils.timezone import now
-from django.db.models import F, Count, Q
-from django.db.models.functions import Length
+from django.db.models import Count, Q
+
 
 # Django 관련 라이브러리
 from django.conf import settings
@@ -20,10 +20,10 @@ from products.models import Product, ProductImage
 from . import serializers
 from reviews.serializers import (
     ReviewSerializer,
-    ReviewPhotoSerializer,
-    ReviewReplySerializer,
+    ReviewImageSerializer,
+    ReviewResponseSerializer,
 )
-from reviews.models import Review, ReviewReply, ReviewPhoto
+from reviews.models import Review, ReviewResponse, ReviewImage
 from user_activities.models import UserProductTimestamp
 
 
@@ -140,180 +140,6 @@ class ProductDetail(APIView):
         return Response(serializer.data)
 
 
-# TODO: 하단 reviews, image, video 관련 view 리팩토링
-class ProductReviews(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_object(self, pk):
-        try:
-            return Product.objects.get(pk=pk)
-        except Product.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk):
-        try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
-        except ValueError:
-            page = 1
-
-        query_type = self.request.GET.get("sort", None)
-
-        page_size = settings.REVIEW_PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
-        product = self.get_object(pk)
-        total_reviews = product.reviews.count()
-        reviews = product.reviews.all()
-
-        if query_type == "created_at":
-            reviews = reviews.order_by("-created_at")
-            serializer = ReviewSerializer(
-                reviews[start:end],
-                many=True,
-            )
-
-            response_data = {
-                "total_count": total_reviews,  # 상품의 총 개수를 응답 데이터에 추가
-                "reviews": serializer.data,
-            }
-            return Response(response_data)
-
-        else:  # suggested
-            reviews = reviews.annotate(
-                recommendation_weight=(Length("content"))
-                + F("rating") * 100
-                + Count("images") * 40
-            )
-
-            # 추천 가중치를 기준으로 정렬
-            reviews = reviews.order_by("-recommendation_weight")
-
-            # 최종 정렬 결과를 반환
-            serializer = ReviewSerializer(
-                reviews[start:end],
-                many=True,
-            )
-
-            response_data = {
-                "total_count": reviews.count(),
-                "reviews": serializer.data,
-            }
-            return Response(response_data)
-
-    def post(self, request, pk):
-        user = request.user
-        product = self.get_object(pk)
-        image_urls = request.data.get("images", [])
-
-        serializer = ReviewSerializer(data=request.data)
-        if serializer.is_valid():
-            review = serializer.save(
-                user=user,
-                product=product,
-            )
-
-            if image_urls:
-                images_data = [
-                    {"image": url, "review": review.pk} for url in image_urls
-                ]
-                images_serializer = ReviewPhotoSerializer(data=images_data, many=True)
-                images_serializer.is_valid(raise_exception=True)
-                images = images_serializer.save()
-
-                review.images.set(images)
-
-            serializer = ReviewSerializer(review)
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
-
-
-class ProductReviewDetail(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_object(self, review_pk):
-        try:
-            return Review.objects.get(pk=review_pk)
-        except Product.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk, review_pk):
-        review = self.get_object(review_pk)
-
-        serializer = ReviewSerializer(
-            review,
-        )
-
-        return Response(serializer.data)
-
-    def put(self, request, pk, review_pk):
-        review = self.get_object(review_pk)
-        serializer = ReviewSerializer(review, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk, review_pk):
-        review = self.get_object(review_pk)
-        review.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ProductReviewReply(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_object(self, review_pk):
-        try:
-            return Review.objects.get(pk=review_pk).reply
-        except ReviewReply.DoesNotExist:
-            raise NotFound
-
-    def get(self, request, pk, review_pk):
-        reply = self.get_object(review_pk)
-
-        serializer = ReviewReplySerializer(
-            reply,
-        )
-
-        return Response(serializer.data)
-
-    def post(self, request, pk, review_pk):
-        try:
-            review = Review.objects.get(pk=review_pk)
-        except Review.DoesNotExist:
-            raise NotFound("Review not found.")
-
-        # 상점 권한 확인
-        if review.product.shop != request.user.shop:
-            raise PermissionDenied(
-                "You don't have permission to post a reply for this review."
-            )
-        serializer = ReviewReplySerializer(data=request.data)
-        if serializer.is_valid():
-            reply = serializer.save(review=review, shop=request.user.shop)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def put(self, request, pk, review_pk):
-        reply = self.get_object(review_pk)
-
-        serializer = ReviewReplySerializer(reply, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk, review_pk):
-        reply = self.get_object(review_pk)
-        reply.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class ProductImages(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -341,21 +167,6 @@ class ProductImages(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ProductImageDetail(APIView):
-    permission_classes = [IsAuthenticated]  # check user authenticated
-
-    def get_object(self, pk):
-        try:
-            return ProductImage.objects.get(pk=pk)
-        except ProductImage.DoesNotExist:
-            raise NotFound
-
-    def delete(self, request, pk):
-        photo = self.get_object(pk)
-        photo.delete()
-        return Response({"message": "ProductImage deleted"}, status=HTTP_200_OK)
-
-
 class ProductVideos(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -377,24 +188,3 @@ class ProductVideos(APIView):
             return Response(serializer.data)
         else:
             return Response(serializer.errors)
-
-
-class ReviewPhotoList(APIView):
-    def get(self, request, product_pk):
-        try:
-            page = request.query_params.get("page", 1)  # ( ,default value)
-            page = int(page)  # Type change
-        except ValueError:
-            page = 1
-
-        page_size = settings.REVIEW_IMAGE_PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
-
-        photos = ReviewPhoto.objects.filter(review__product_id=product_pk)
-        serializer = ReviewPhotoSerializer(
-            photos[start:end],
-            many=True,
-        )
-
-        return Response(serializer.data)
