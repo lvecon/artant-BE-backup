@@ -15,11 +15,5 @@ class EmailBackend(ModelBackend):
             if user.check_password(password) and self.user_can_authenticate(user):
                 return user
         except User.DoesNotExist:
-            # 여기서 적절한 예외 처리
+            # 여기서 적절한 예외 처리.
             pass
-
-    def get_user(self, user_id):
-        try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            return None
