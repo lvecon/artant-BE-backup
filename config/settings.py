@@ -75,6 +75,10 @@ SYSTEM_APPS = [
 
 INSTALLED_APPS = THIRD_PARTY_APPS + CUSTOM_APPS + SYSTEM_APPS
 
+AUTHENTICATION_BACKENDS = [
+    # 기타 인증 백엔드
+    "users.authentication.EmailBackend",
+]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
