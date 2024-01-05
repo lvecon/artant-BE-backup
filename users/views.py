@@ -45,7 +45,7 @@ class LogIn(APIView):
         if not email or not password:
             raise ParseError("Email and password are required")
 
-        # Authenticate user based on email
+        # Authenticate user based on email. 보안상 유저 존재 여부와 관련 없이 로그인 실패 시 항상 같은 에러
         user = authenticate(request, email=email, password=password)
         if user:
             login(request, user)
@@ -66,8 +66,9 @@ class LogOut(APIView):
 
 
 class SignUp(APIView):
+    # TODO: 필수 약관 동의 여부 확인 로직
     def post(self, request, format=None):
-        serializer = serializers.UserSerializer(data=request.data)
+        serializer = serializers.UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             if user:
