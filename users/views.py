@@ -1,5 +1,6 @@
 import jwt
 import re
+import requests
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.core.validators import validate_email, ValidationError
@@ -13,9 +14,10 @@ from . import serializers
 
 
 class Me(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        print("Hi", request.headers)
         user = request.user
         serializer = serializers.PrivateUserSerializer(user)
         return Response(serializer.data)
@@ -176,15 +178,44 @@ class PhoneNumberCheck(APIView):
 
 class KakaoLogIn(APIView):
     def post(self, request):
-        code = request.data.get("code")
-        access_token = request.post(
-            "https://kauth.kakao.com/oauth/token",
-            headers={"Content-Type": "application/x-222-form-urlencoded"},
-            data={
-                "grant_type": "authorization_code",
-                "client_id": "08257a5e580b5be1b9a8785b4f4ace12",
-                "redirect_uri": "http://127.0.0.1:3000/social/kakao",
-                "code": code,
-            },
-        )
-        print(access_token.json())
+        try:
+            code = request.data.get("code")
+            access_token = requests.post(
+                "https://kauth.kakao.com/oauth/token",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "grant_type": "authorization_code",
+                    "client_id": "08257a5e580b5be1b9a8785b4f4ace12",
+                    "redirect_uri": "http://127.0.0.1:3000",
+                    "code": code,
+                },
+            )
+            print(access_token.json())
+            access_token = access_token.json().get("access_token")
+            user_data = requests.get(
+                "https://kapi.kakao.com/v2/user/me",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
+                },
+            )
+            user_data = user_data.json()
+            kakao_account = user_data.get("kakao_account")
+            profile = kakao_account.get("profile")
+            try:
+                user = User.objects.get(email="hoontest@example.com")
+                login(request, user)
+                return Response(status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                user = User.objects.create(
+                    email="hoontest@example.com",
+                    username=profile.get("nickname"),
+                    name=profile.get("nickname"),
+                    avatar=profile.get("profile_image_url"),
+                )
+                user.set_unusable_password()
+                user.save()
+                login(request, user)
+                return Response(status=status.HTTP_200_OK)
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)

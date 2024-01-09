@@ -112,7 +112,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "middlewares.user_logging_middleware.UserLoggingMiddleware",  # 유저 로그 기록
+    # "middlewares.user_logging_middleware.UserLoggingMiddleware",  # 유저 로그 기록
 ]
 
 CORS_ORIGIN_WHITELIST = [
@@ -237,31 +237,31 @@ AUTH_USER_MODEL = "users.User"
 
 # Logging
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": "django.log",
-            "formatter": "verbose",
-        },
-    },
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {message}",
-            "style": "{",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["file"],
-            "level": "INFO",
-            "propagate": True,
-        },
-    },
-}
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "handlers": {
+#         "file": {
+#             "level": "INFO",
+#             "class": "logging.FileHandler",
+#             "filename": "django.log",
+#             "formatter": "verbose",
+#         },
+#     },
+#     "formatters": {
+#         "verbose": {
+#             "format": "{levelname} {asctime} {module} {message}",
+#             "style": "{",
+#         },
+#     },
+#     "loggers": {
+#         "django": {
+#             "handlers": ["file"],
+#             "level": "INFO",
+#             "propagate": True,
+#         },
+#     },
+# }
 
 
 PAGE_SIZE = 3
@@ -290,6 +290,6 @@ CF_TOKEN = env("CF_TOKEN")
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # "rest_framework.authentication.SessionAuthentication", # 세션 기반 인증
-        "common.authentication.JWTAuthentication", # jwt 토큰 기반 인증
+        "common.authentication.JWTAuthentication",  # jwt 토큰 기반 인증
     ]
 }
