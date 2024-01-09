@@ -14,10 +14,11 @@ from . import serializers
 
 
 class Me(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request):
         # print("Hi", request.headers)
+        print(request.user)
         user = request.user
         serializer = serializers.PrivateUserSerializer(user)
         return Response(serializer.data)
@@ -203,12 +204,12 @@ class KakaoLogIn(APIView):
             kakao_account = user_data.get("kakao_account")
             profile = kakao_account.get("profile")
             try:
-                user = User.objects.get(email="hoontest@example.com")
+                user = User.objects.get(email=kakao_account.get("email"))
                 login(request, user)
                 return Response(status=status.HTTP_200_OK)
             except User.DoesNotExist:
                 user = User.objects.create(
-                    email="hoontest@example.com",
+                    email=kakao_account.get("email"),
                     username=profile.get("nickname"),
                     name=profile.get("nickname"),
                     avatar=profile.get("profile_image_url"),

@@ -289,7 +289,7 @@ CF_TOKEN = env("CF_TOKEN")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # "rest_framework.authentication.SessionAuthentication", # 세션 기반 인증
-        "common.authentication.JWTAuthentication",  # jwt 토큰 기반 인증
+        "rest_framework.authentication.SessionAuthentication",  # 세션 기반 인증
+        # "common.authentication.JWTAuthentication",  # jwt 토큰 기반 인증
     ]
 }
