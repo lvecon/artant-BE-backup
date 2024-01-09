@@ -1,6 +1,8 @@
 import jwt
+import re
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.core.validators import validate_email, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -8,7 +10,6 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from users.models import User
 from . import serializers
-from datetime import datetime, timedelta
 
 
 class Me(APIView):
@@ -132,3 +133,42 @@ class PublicUser(APIView):
             raise NotFound
         serializer = serializers.PublicUserSerializer(user)
         return Response(serializer.data)
+
+
+class EmailCheck(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response(
+                {"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {"error": "This email is already in use."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"message": "Email is available."}, status=status.HTTP_200_OK)
+
+
+class PhoneNumberCheck(APIView):
+    def post(self, request):
+        phone_number = request.data.get("cell_phone_number")
+        if not re.match(r"^01([0-9])(\d{7,8})$", phone_number):
+            return Response(
+                {"error": "Invalid phone number format."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if User.objects.filter(cell_phone_number=phone_number).exists():
+            return Response(
+                {"error": "This phone number is already in use."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"message": "Phone number is available."}, status=status.HTTP_200_OK
+        )
