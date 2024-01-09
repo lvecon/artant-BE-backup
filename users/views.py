@@ -62,28 +62,28 @@ class LogIn(APIView):
 
 
 # JWT-Token 기반 인증. TODO: 토큰 만료 시간 설정하기. 유저가 활동 중인 경우 만료 시간 자동갱신 기능 고려하기.
-class JWTLogIn(APIView):
-    def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
-        if not email or not password:
-            raise ParseError
-        user = authenticate(
-            request,
-            email=email,
-            password=password,
-        )
-        if user:
-            # JWT 토큰에 유효기간 설정
-            exp_time = datetime.utcnow() + timedelta(hours=1)  # 1시간 후 만료
-            token = jwt.encode(
-                {"pk": user.pk, "exp": exp_time},
-                settings.SECRET_KEY,
-                algorithm="HS256",
-            )
-            return Response({"token": token})
-        else:
-            return Response({"error": "wrong password"})
+# class JWTLogIn(APIView):
+#     def post(self, request):
+#         email = request.data.get("email")
+#         password = request.data.get("password")
+#         if not email or not password:
+#             raise ParseError
+#         user = authenticate(
+#             request,
+#             email=email,
+#             password=password,
+#         )
+#         if user:
+#             # JWT 토큰에 유효기간 설정
+#             exp_time = datetime.utcnow() + timedelta(hours=1)  # 1시간 후 만료
+#             token = jwt.encode(
+#                 {"pk": user.pk, "exp": exp_time},
+#                 settings.SECRET_KEY,
+#                 algorithm="HS256",
+#             )
+#             return Response({"token": token})
+#         else:
+#             return Response({"error": "wrong password"})
 
 
 class LogOut(APIView):

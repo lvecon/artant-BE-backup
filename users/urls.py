@@ -3,7 +3,7 @@ from . import views
 
 urlpatterns = [
     path("me", views.Me.as_view(), name="user_me"),
-    path("log-in", views.JWTLogIn.as_view(), name="user_login"),
+    path("log-in", views.LogIn.as_view(), name="user_login"),
     path("log-out", views.LogOut.as_view(), name="user_logout"),
     path("sign-up", views.SignUp.as_view(), name="user_signup"),
     path(
