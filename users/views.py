@@ -14,10 +14,10 @@ from . import serializers
 
 
 class Me(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        print("Hi", request.headers)
+        # print("Hi", request.headers)
         user = request.user
         serializer = serializers.PrivateUserSerializer(user)
         return Response(serializer.data)
