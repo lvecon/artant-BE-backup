@@ -197,7 +197,7 @@ class KakaoLogIn(APIView):
                 data={
                     "grant_type": "authorization_code",
                     "client_id": "08257a5e580b5be1b9a8785b4f4ace12",
-                    "redirect_uri": "http://127.0.0.1:3000",
+                    "redirect_uri": "http://artant.shop",
                     "code": code,
                 },
             )
