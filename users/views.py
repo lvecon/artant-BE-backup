@@ -166,15 +166,25 @@ class PhoneNumberCheck(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if User.objects.filter(cell_phone_number=phone_number).exists():
+        user = User.objects.filter(cell_phone_number=phone_number).first()
+        if user:
+            masked_email = self.mask_email(user.email)
             return Response(
-                {"error": "This phone number is already in use."},
+                {
+                    "error": "This phone number is already in use.",
+                    "email": masked_email,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(
             {"message": "Phone number is available."}, status=status.HTTP_200_OK
         )
+
+    def mask_email(self, email):
+        local_part, domain_part = email.split("@")
+        masked_local = local_part[:2] + "*" * (len(local_part) - 2)
+        return f"{masked_local}@{domain_part}"
 
 
 class KakaoLogIn(APIView):
