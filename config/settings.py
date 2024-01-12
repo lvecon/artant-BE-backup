@@ -29,6 +29,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
+# TODO: 프로덕션 시, secret key .env 로 이동시키기. nomad lecture 15.6
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-^wah$x%+tun3&j!$*vnj(q=n4+ra&a@1j2qq5(fuxpugk2dwc!"
 
@@ -75,6 +76,32 @@ SYSTEM_APPS = [
 
 INSTALLED_APPS = THIRD_PARTY_APPS + CUSTOM_APPS + SYSTEM_APPS
 
+AUTHENTICATION_BACKENDS = [
+    # 기타 인증 백엔드
+    "users.authentication.EmailBackend",
+]
+
+# Password validation
+# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 8,
+        },
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -85,7 +112,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "middlewares.user_logging_middleware.UserLoggingMiddleware",  # 유저 로그 기록
+    # "middlewares.user_logging_middleware.UserLoggingMiddleware",  # 유저 로그 기록
 ]
 
 CORS_ORIGIN_WHITELIST = [
@@ -210,31 +237,31 @@ AUTH_USER_MODEL = "users.User"
 
 # Logging
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": "django.log",
-            "formatter": "verbose",
-        },
-    },
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {message}",
-            "style": "{",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["file"],
-            "level": "INFO",
-            "propagate": True,
-        },
-    },
-}
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "handlers": {
+#         "file": {
+#             "level": "INFO",
+#             "class": "logging.FileHandler",
+#             "filename": "django.log",
+#             "formatter": "verbose",
+#         },
+#     },
+#     "formatters": {
+#         "verbose": {
+#             "format": "{levelname} {asctime} {module} {message}",
+#             "style": "{",
+#         },
+#     },
+#     "loggers": {
+#         "django": {
+#             "handlers": ["file"],
+#             "level": "INFO",
+#             "propagate": True,
+#         },
+#     },
+# }
 
 
 PAGE_SIZE = 3
@@ -259,3 +286,10 @@ PURCHASE_PAGE_SIZE = 3
 
 CF_ID = env("CF_ID")
 CF_TOKEN = env("CF_TOKEN")
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",  # 세션 기반 인증
+        # "common.authentication.JWTAuthentication",  # jwt 토큰 기반 인증
+    ]
+}

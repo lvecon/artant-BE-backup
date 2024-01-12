@@ -10,4 +10,8 @@ urlpatterns = [
         "change-password", views.ChangePassword.as_view(), name="user_change_password"
     ),
     path("<int:pk>", views.PublicUser.as_view(), name="user_public_profile"),
+    path("validate-email", views.EmailCheck.as_view(), name="check_email_exists"),
+    path("validate-phone", views.PhoneNumberCheck.as_view(), name="check_phone_exists"),
+    path("kakao", views.KakaoLogIn.as_view(), name="kakao_login")
+    # path("jwt-login", views.JWTLogIn.as_view()),
 ]
