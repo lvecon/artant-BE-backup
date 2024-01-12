@@ -28,6 +28,11 @@ class User(AbstractUser):
         on_delete=models.SET_NULL,
     )
 
+    # 사업자 회원 정보
+    is_corporate = models.BooleanField(default=False)
+    corporate_name = models.CharField(max_length=100, blank=True, null=True)
+    corporate_number = models.CharField(max_length=30, blank=True, null=True)
+
     # 필수 약관 동의
     agreed_to_terms_of_service = models.BooleanField(default=False)  # 아트앤트 이용약관
     agreed_to_electronic_transactions = models.BooleanField(

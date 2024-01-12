@@ -84,6 +84,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "cell_phone_number",
             "description",
             "avatar",
+            "is_corporate",
+            "corporate_number",
+            "corporate_name",
             "agreed_to_terms_of_service",
             "agreed_to_electronic_transactions",
             "agreed_to_privacy_policy",
@@ -107,6 +110,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             or not data.get("agreed_to_third_party_sharing")
         ):
             raise serializers.ValidationError("모든 필수 약관에 동의해야 합니다.")
+
+        # 일반 법인 여부 확인
+        if data.get("is_corporate"):
+            if not data.get("corporate_number"):
+                raise serializers.ValidationError(
+                    "Corporate number is required for corporate users."
+                )
+            if not data.get("corporate_name"):
+                raise serializers.ValidationError(
+                    "Corporate name is required for corporate users."
+                )
         return data
 
     # TODO: 필요시 비밀번호 유효성 검사 로직 보안.
@@ -127,29 +141,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        user = User.objects.create(
-            email=validated_data["email"],
-            name=validated_data["name"],
-            username=validated_data["username"],
-            gender=validated_data["gender"],
-            birthday=validated_data["birthday"],
-            cell_phone_number=validated_data["cell_phone_number"],
-            description=validated_data["description"],
-            avatar=validated_data["avatar"],
-            agreed_to_terms_of_service=validated_data["agreed_to_terms_of_service"],
-            agreed_to_electronic_transactions=validated_data[
-                "agreed_to_electronic_transactions"
-            ],
-            agreed_to_privacy_policy=validated_data["agreed_to_privacy_policy"],
-            confirmed_age_over_14=validated_data["confirmed_age_over_14"],
-            agreed_to_third_party_sharing=validated_data[
-                "agreed_to_third_party_sharing"
-            ],
-            agreed_to_optional_privacy_policy=validated_data[
-                "agreed_to_optional_privacy_policy"
-            ],
-            agreed_to_marketing_mails=validated_data["agreed_to_marketing_mails"],
-        )
+        user_data = {
+            k: v
+            for k, v in validated_data.items()
+            if k != "password" and k != "password_confirm"
+        }
+        user = User.objects.create(**user_data)
         user.set_password(validated_data["password"])
         user.save()
         return user
