@@ -1,3 +1,5 @@
+import json
+from config.settings import CORPORATE_API_KEY
 import jwt
 import re
 import requests
@@ -105,6 +107,7 @@ class LogOut(APIView):
 class SignUp(APIView):
     # TODO: 필수 약관 동의 여부 확인 로직
     def post(self, request, format=None):
+        print(request.data)
         serializer = serializers.UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -140,6 +143,30 @@ class PublicUser(APIView):
             raise NotFound
         serializer = serializers.PublicUserSerializer(user)
         return Response(serializer.data)
+
+
+class CorporateNumberCheck(APIView):
+    # 설명은 https://www.data.go.kr/data/15081808/openapi.do
+    def post(self, request):
+        corporate_number = request.data.get("corporate_number")
+        print(corporate_number)
+        headers = {"Content-type": "application/json; charset=utf-8"}
+        url = f"http://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey={CORPORATE_API_KEY}&returnType=JSON"
+        data = {"b_no": [corporate_number]}
+        print(data)
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+        res = response.json()
+        try:
+            if res["match_cnt"] == 1:
+                return Response(
+                    {"message": "Corporate Number is available"},
+                    status=status.HTTP_200_OK,
+                )
+        except:
+            return Response(
+                {"message": "Corporate Number is unavailable"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class EmailCheck(APIView):
