@@ -21,7 +21,7 @@ class FavoriteProductSerializer(serializers.ModelSerializer):
             "original_price",
             "price",
             "discount_rate",
-            "free_shipping",
+            "is_free_shipping",
             "is_discount",
             "is_best_seller",
             "is_star_seller",
