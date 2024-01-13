@@ -293,3 +293,11 @@ REST_FRAMEWORK = {
         # "common.authentication.JWTAuthentication",  # jwt 토큰 기반 인증
     ]
 }
+
+# AWS ses settings
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "email-smtp.ap-northeast-2.amazonaws.com"
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
