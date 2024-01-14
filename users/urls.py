@@ -24,5 +24,10 @@ urlpatterns = [
         views.PasswordResetRequestView.as_view(),
         name="request_password_reset",
     ),
+    path(
+        "password-reset-confirm",
+        views.PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
     # path("jwt-login", views.JWTLogIn.as_view()),
 ]
