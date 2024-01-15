@@ -293,6 +293,8 @@ REST_FRAMEWORK = {
         # "common.authentication.JWTAuthentication",  # jwt 토큰 기반 인증
     ]
 }
+# 국세청 사업자 조회
+CORPORATE_API_KEY = env("CORPORATE_API_KEY")
 
 # AWS ses settings
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

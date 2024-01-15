@@ -1,3 +1,5 @@
+import json
+from config.settings import CORPORATE_API_KEY
 import jwt
 import re
 import requests
@@ -7,7 +9,8 @@ from django.core.validators import validate_email, ValidationError
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -105,6 +108,7 @@ class LogOut(APIView):
 class SignUp(APIView):
     # TODO: 필수 약관 동의 여부 확인 로직
     def post(self, request, format=None):
+        print(request.data)
         serializer = serializers.UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -140,6 +144,30 @@ class PublicUser(APIView):
             raise NotFound
         serializer = serializers.PublicUserSerializer(user)
         return Response(serializer.data)
+
+
+class CorporateNumberCheck(APIView):
+    # 설명은 https://www.data.go.kr/data/15081808/openapi.do
+    def post(self, request):
+        corporate_number = request.data.get("corporate_number")
+        print(corporate_number)
+        headers = {"Content-type": "application/json; charset=utf-8"}
+        url = f"http://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey={CORPORATE_API_KEY}&returnType=JSON"
+        data = {"b_no": [corporate_number]}
+        print(data)
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+        res = response.json()
+        try:
+            if res["match_cnt"] == 1:
+                return Response(
+                    {"message": "Corporate Number is available"},
+                    status=status.HTTP_200_OK,
+                )
+        except:
+            return Response(
+                {"message": "Corporate Number is unavailable"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class EmailCheck(APIView):
@@ -263,7 +291,7 @@ class PasswordResetRequestView(APIView):
         except User.DoesNotExist:
             return False
 
-        # 토큰과 UID 생성
+        # 토큰과 UID 생성 TODO: 기본 토큰 만료시간 24시간. 보안 강화 위해 변경 고려.
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
@@ -279,3 +307,43 @@ class PasswordResetRequestView(APIView):
             fail_silently=False,
         )
         return True
+
+
+class PasswordResetConfirmView(APIView):
+    def post(self, request, *args, **kwargs):
+        # 요청에서 uid, token, new_password, confirm_password를 추출
+        uidb64 = request.data.get("uid")
+        token = request.data.get("token")
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        # 새 비밀번호와 확인 비밀번호가 일치하는지 확인
+        if new_password != confirm_password:
+            return Response(
+                {"error": "New password and confirm password do not match."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # uid를 사용하여 사용자 객체를 가져옴
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response(
+                {"error": "Invalid token or user does not exist."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 토큰 검증 및 비밀번호 재설정
+        if user is not None and default_token_generator.check_token(user, token):
+            user.set_password(new_password)
+            user.save()
+            return Response(
+                {"message": "Password has been reset successfully."},
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {"error": "Invalid token or user does not exist."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
