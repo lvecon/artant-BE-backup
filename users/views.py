@@ -26,6 +26,9 @@ class Me(APIView):
     def get(self, request):
         # print("Hi", request.headers)
         print(request.user)
+        print(request.session)
+        print(request.session.session_key)
+
         user = request.user
         serializer = serializers.PrivateUserSerializer(user)
         return Response(serializer.data)
@@ -56,6 +59,7 @@ class LogIn(APIView):
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
+        rememberMe = request.data.get("rememberMe")
 
         if not email or not password:
             raise ParseError("Email and password are required")
@@ -64,6 +68,13 @@ class LogIn(APIView):
         user = authenticate(request, email=email, password=password)
         if user:
             login(request, user)
+            if rememberMe:
+                # Set session to expire after a longer period (e.g., 2 weeks)
+                request.session.set_expiry(1209600)  # 2 weeks, in seconds
+            else:
+                # Session will expire when the user closes the browser
+                request.session.set_expiry(0)
+
             return Response({"ok": "Welcome!"})
         else:
             return Response(
