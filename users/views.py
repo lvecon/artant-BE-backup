@@ -25,11 +25,12 @@ class Me(APIView):
 
     def get(self, request):
         # print("Hi", request.headers)
-        print(request.user)
-        print(request.session)
-        print(request.session.session_key)
+        request.session["init"] = True
+        request.session.save()
 
         user = request.user
+        if not user.is_authenticated:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer = serializers.PrivateUserSerializer(user)
         return Response(serializer.data)
 
@@ -56,6 +57,7 @@ class Me(APIView):
 
 # 세션 기반 authentication
 class LogIn(APIView):
+    # 비회원으로 최근에 본 상품들을 로그인하면서 db에 넣어줘야 할지?
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
