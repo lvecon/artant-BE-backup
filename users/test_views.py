@@ -1,36 +1,61 @@
 from rest_framework.test import APITestCase
-from django.urls import reverse
 from rest_framework import status
-from users.models import User
-from django.contrib.auth.hashers import make_password
+from .models import User
+from shops.models import Shop
+import datetime
 
 
-class MeAPITest(APITestCase):
+class MeViewTest(APITestCase):
+    URL = "/api/v1/users/me"
+
     def setUp(self):
-        # 테스트 사용자 생성 및 인증
-        self.user = User.objects.create(
-            username="testuser",
-            email="testuser@example.com",
-            password=make_password("testpassword"),
+        # 사용자와 상점 인스턴스 생성
+        self.user = User.objects.create_user(
+            username="testUser",
+            email="testUser@gmail.com",
+            password="testpassword",
+            name="testUser",
+            gender="Male",
+            birthday=datetime.date(1990, 1, 1),
+            description="Initial description about the user.",
+        )
+        self.shop = Shop.objects.create(
+            user=self.user,
+            shop_name="testShop",
+            avatar="https://example.com/shop_avatar.jpg",
+            is_activated=True,
+            register_step=4,
         )
         self.client.force_authenticate(user=self.user)
 
-    def test_get_me(self):
-        # 현재 인증된 사용자 정보를 가져오는 GET 요청 테스트
-        response = self.client.get("/api/v1/users/me")
+    def test_get_user_info(self):
+        # 사용자 정보 조회 테스트
+        response = self.client.get(self.URL)
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["username"], self.user.username)
+        # 여기에서 response.data를 이용하여 필드 검증
+        self.assertEqual(response.data["username"], "testUser")
+        self.assertEqual(response.data["email"], "testUser@gmail.com")
+        self.assertEqual(response.data["shop"]["shop_name"], "testShop")
+        self.assertEqual(
+            response.data["description"], "Initial description about the user."
+        )
 
-    def test_patch_me(self):
-        # 사용자 정보를 업데이트하는 PATCH 요청 테스트
-        new_data = {"name": "New Name", "email": "newemail@example.com"}
-        response = self.client.patch("/api/v1/users/me", new_data)
+    def test_update_user_info(self):
+        # 사용자 정보 수정 테스트
+        data = {
+            "name": "UpdatedName",
+            "description": "Updated description about the user.",
+        }
+        response = self.client.patch(self.URL, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.user.email, "newemail@example.com")
+        self.assertEqual(self.user.name, "UpdatedName")
+        self.assertEqual(self.user.description, "Updated description about the user.")
 
-    def test_delete_me(self):
-        # 사용자를 삭제하는 DELETE 요청 테스트
-        response = self.client.delete("/api/v1/users/me")
+    def test_delete_user(self):
+        # 사용자 계정 삭제 테스트
+        response = self.client.delete(self.URL)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(User.objects.filter(username="testuser").exists())
+        with self.assertRaises(User.DoesNotExist):
+            User.objects.get(username="testUser")
