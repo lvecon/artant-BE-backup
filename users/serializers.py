@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from .models import User
 from shops.models import Shop
 import re
+from .utils import check_phone_number
 
 
 class TinyUserSerializer(ModelSerializer):
@@ -101,6 +102,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # 비밀번호 일치 확인
         if data["password"] != data["password_confirm"]:
             raise serializers.ValidationError("Passwords must match.")
+
         # 필수 약관 동의 확인
         if (
             not data.get("agreed_to_terms_of_service")
@@ -122,6 +124,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                     "Corporate name is required for corporate users."
                 )
         return data
+
+    def validate_cell_phone_number(self, value):
+        result = check_phone_number(value)
+        if "error" in result:
+            raise ValidationError(result["error"])
+        return value
 
     # TODO: 필요시 비밀번호 유효성 검사 로직 보안.
     def validate_password(self, value):
