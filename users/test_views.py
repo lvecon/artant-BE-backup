@@ -32,7 +32,6 @@ class MeViewTest(APITestCase):
     def test_get_user_info(self):
         # 사용자 정보 조회 테스트
         response = self.client.get(self.URL)
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # 여기에서 response.data를 이용하여 필드 검증
         self.assertEqual(response.data["username"], "testUser")
@@ -65,10 +64,11 @@ class MeViewTest(APITestCase):
 class UserAPITestCase(APITestCase):
     def setUp(self):
         self.user_data = {
-            "username": "testuser",
+            "username": "test",
             "email": "test@example.com",
             "password": make_password("Password123!"),
-            "name": "Test User",
+            "name": "testuser",
+            "cell_phone_number": "01000000000",
             # 추가 필요한 필드 설정
         }
         self.user = User.objects.create(**self.user_data)
@@ -79,13 +79,100 @@ class UserAPITestCase(APITestCase):
             "email": "newuser@example.com",
             "password": "Password123!",
             "password_confirm": "Password123!",
-            "name": "New User",
+            "name": "NewUser",
             "username": "newuser",
-            # 필수 약관 동의 및 기타 필드
+            "gender": "Male",
+            "birthday": "1999-01-01",
+            "cell_phone_number": "01012345678",
+            "agreed_to_terms_of_service": True,
+            "agreed_to_electronic_transactions": True,
+            "agreed_to_privacy_policy": True,
+            "confirmed_age_over_14": True,
+            "agreed_to_third_party_sharing": True,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username="newuser").exists())
+
+    def test_signup_with_invalid_password(self):
+        url = "/api/v1/users/sign-up"
+        data = {
+            "email": "newuser@example.com",
+            "password": "simple",
+            "password_confirm": "simple",
+            "name": "Newuser",
+            "username": "newuser",
+            "gender": "Male",
+            "birthday": "1999-01-01",
+            "cell_phone_number": "01012345678",
+            "agreed_to_terms_of_service": True,
+            "agreed_to_electronic_transactions": True,
+            "agreed_to_privacy_policy": True,
+            "confirmed_age_over_14": True,
+            "agreed_to_third_party_sharing": True,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_signup_with_unmatched_passwords(self):
+        url = "/api/v1/users/sign-up"
+        data = {
+            "email": "newuser@example.com",
+            "password": "Password123!",
+            "password_confirm": "Different123!",
+            "name": "Newuser",
+            "username": "newuser",
+            "gender": "Male",
+            "birthday": "1999-01-01",
+            "cell_phone_number": "01012345678",
+            "agreed_to_terms_of_service": True,
+            "agreed_to_electronic_transactions": True,
+            "agreed_to_privacy_policy": True,
+            "confirmed_age_over_14": True,
+            "agreed_to_third_party_sharing": True,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_signup_with_invalid_phone_number(self):
+        url = "/api/v1/users/sign-up"
+        data = {
+            "email": "newuser@example.com",
+            "password": "Password123!",
+            "password_confirm": "Password123!",
+            "name": "Newuser",
+            "username": "newuser",
+            "gender": "Male",
+            "birthday": "1999-01-01",
+            "cell_phone_number": "01000000000",
+            "agreed_to_terms_of_service": True,
+            "agreed_to_electronic_transactions": True,
+            "agreed_to_privacy_policy": True,
+            "confirmed_age_over_14": True,
+            "agreed_to_third_party_sharing": True,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_signup_without_agreeing_to_mandatory_terms(self):
+        url = "/api/v1/users/sign-up"
+        data = {
+            "email": "newuser@example.com",
+            "password": "Password123!",
+            "password_confirm": "Password123!",
+            "name": "Newuser",
+            "username": "newuser",
+            "gender": "Male",
+            "birthday": "1999-01-01",
+            "cell_phone_number": "01012345678",
+            "agreed_to_terms_of_service": False,
+            "agreed_to_electronic_transactions": False,
+            "agreed_to_privacy_policy": False,
+            "confirmed_age_over_14": False,
+            "agreed_to_third_party_sharing": False,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_login(self):
         url = "/api/v1/users/log-in"
