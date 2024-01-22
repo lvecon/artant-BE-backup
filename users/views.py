@@ -18,10 +18,11 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from users.models import User
 from . import serializers
+from .utils import check_phone_number
 
 
 class Me(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         # print("Hi", request.headers)
@@ -192,31 +193,11 @@ class EmailCheck(APIView):
 class PhoneNumberCheck(APIView):
     def post(self, request):
         phone_number = request.data.get("cell_phone_number")
-        if not re.match(r"^01([0-9])(\d{7,8})$", phone_number):
-            return Response(
-                {"error": "Invalid phone number format."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        result = check_phone_number(phone_number)
 
-        user = User.objects.filter(cell_phone_number=phone_number).first()
-        if user:
-            masked_email = self.mask_email(user.email)
-            return Response(
-                {
-                    "error": "This phone number is already in use.",
-                    "email": masked_email,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(
-            {"message": "Phone number is available."}, status=status.HTTP_200_OK
-        )
-
-    def mask_email(self, email):
-        local_part, domain_part = email.split("@")
-        masked_local = local_part[:2] + "*" * (len(local_part) - 2)
-        return f"{masked_local}@{domain_part}"
+        if "error" in result:
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class KakaoLogIn(APIView):
