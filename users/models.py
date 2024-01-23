@@ -7,6 +7,7 @@ from users import UserGenderChoices
 # TODO: 개인정보 페이지 기획 완료 시 수정
 class User(AbstractUser):
     name = models.CharField(max_length=30)
+    username = models.CharField(max_length=30, unique=False)  # unique 속성 제거
     email = models.EmailField(unique=True)
     avatar = models.URLField(blank=True, null=True)
     gender = models.CharField(max_length=16, choices=UserGenderChoices.choices)

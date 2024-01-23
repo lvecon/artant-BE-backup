@@ -130,6 +130,7 @@ class ShopCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
         fields = [
+            "id",
             "shop_name",
             "user",
             "register_step",
