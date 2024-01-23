@@ -105,6 +105,7 @@ class Products(APIView):
             "total_count": total_products,
             "products": serializer.data,
         }
+        print(self.request.session.session_key)
 
         return Response(response_data)
 
@@ -117,6 +118,26 @@ class ProductDetail(APIView):
     def user_viewed(self, timestamp, product):
         user = self.request.user
         if not user.is_authenticated:
+            viewed_products = self.request.session.get("viewed_products", [])
+
+            product_exists = False
+            for view in viewed_products:
+                if view["product_id"] == product.id:
+                    # Update the timestamp of the existing product
+                    view["timestamp"] = now().isoformat()
+                    product_exists = True
+                    break
+
+            if not product_exists:
+                # Add the new product with its timestamp
+                viewed_products.append(
+                    {"product_id": product.id, "timestamp": now().isoformat()}
+                )
+
+            # Store the updated list in the session
+            self.request.session["viewed_products"] = viewed_products
+            self.request.session.save()
+
             return
         upt, _ = UserProductTimestamp.objects.get_or_create(user=user, product=product)
         upt.timestamp = timestamp

@@ -26,8 +26,12 @@ class Me(APIView):
 
     def get(self, request):
         # print("Hi", request.headers)
-        print(request.user)
+        request.session["init"] = True
+        request.session.save()
+
         user = request.user
+        if not user.is_authenticated:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer = serializers.PrivateUserSerializer(user)
         return Response(serializer.data)
 
@@ -54,9 +58,11 @@ class Me(APIView):
 
 # 세션 기반 authentication
 class LogIn(APIView):
+    # 비회원으로 최근에 본 상품들을 로그인하면서 db에 넣어줘야 할지?
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
+        rememberMe = request.data.get("rememberMe")
 
         if not email or not password:
             raise ParseError("Email and password are required")
@@ -65,6 +71,13 @@ class LogIn(APIView):
         user = authenticate(request, email=email, password=password)
         if user:
             login(request, user)
+            if rememberMe:
+                # Set session to expire after a longer period (e.g., 2 weeks)
+                request.session.set_expiry(1209600)  # 2 weeks, in seconds
+            else:
+                # Session will expire when the user closes the browser
+                request.session.set_expiry(0)
+
             return Response({"ok": "Welcome!"})
         else:
             return Response(
