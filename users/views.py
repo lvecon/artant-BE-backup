@@ -290,7 +290,7 @@ class PasswordResetRequestView(APIView):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
         # 비밀번호 재설정 URL
-        reset_url = f"http://example.com/reset_password?uid={uid}&token={token}"
+        reset_url = f"https://artant.shop/reset-password?uid={uid}&token={token}"
 
         # 이메일 전송
         send_mail(
